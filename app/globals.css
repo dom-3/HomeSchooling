@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens as CSS variables (mirror tailwind.config.ts) so inline styles
+ * and SVG strokes (e.g. progress rings) can reference brand/identity colours.
+ * Source: CEO Portal v1 Design Spec §4.
+ */
+:root {
+  --canvas: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #fbfcfd;
+  --ink: #16202b;
+  --ink-2: #5b6675;
+  --ink-3: #8a94a3;
+  --hairline: #e4e8ee;
+  --brand: #1f6f6b;
+  --brand-hover: #185955;
+  --brand-tint: #e7f1f0;
+  --rupert: #b23a2e;
+  --rupert-tint: #f7ecea;
+  --albie: #3e7c59;
+  --albie-tint: #eaf2ec;
+  --ok: #2e7d5b;
+  --ok-tint: #e8f3ed;
+  --warn: #b7791f;
+  --warn-tint: #fbf2e2;
+  --danger: #c2410c;
+  --danger-tint: #fbebe3;
+  --info: #2c6e8f;
+  --info-tint: #e6f0f4;
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Tabular numerals on every metric/bar so live numbers don't jitter (spec §4). */
+.tabnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quiet, accessible focus ring on all interactive elements (spec §4 a11y). */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Subtle motion only — 150–250ms (spec §4). Respect reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
