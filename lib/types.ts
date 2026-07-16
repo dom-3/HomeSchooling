@@ -109,13 +109,14 @@ export interface RewardRow {
   learner_id: string;
   learner: string;
   status: string | null;
-  claimed_at: string | null;
+  requested_at: string | null;
+  scheduled_for: string | null;
   reward_id: string;
   reward: string;
   reward_type: string | null;
-  cost_xp: number | null;
-  total_xp: number;
-  affordable: boolean;
+  cost_coins: number | null;
+  coins_reserved: number | null;
+  balance_now: number | null;
 }
 
 /** The full bundle the dashboard server-fetches once (all learners). */

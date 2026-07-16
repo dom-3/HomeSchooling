@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { DashboardData, Learner } from "@/lib/types";
 import {
   Card,
@@ -185,6 +186,36 @@ export function MasterySection({ data }: { data: DashboardData }) {
 
 /* -------------------------------- Motivation ------------------------------- */
 
+/** Approve / Decline buttons for a pending reward request (admin, live). */
+function RewardActions({ id }: { id: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState<null | "approve" | "decline">(null);
+  async function act(kind: "approve" | "decline") {
+    if (busy) return;
+    setBusy(kind);
+    try {
+      await fetch(`/api/rewards/${kind}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ learnerRewardId: id }),
+      });
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
+  return (
+    <div className="flex gap-2">
+      <Button variant="secondary" size="sm" disabled={busy !== null} onClick={() => act("decline")}>
+        {busy === "decline" ? "…" : "Decline"}
+      </Button>
+      <Button variant="primary" size="sm" disabled={busy !== null} onClick={() => act("approve")}>
+        {busy === "approve" ? "…" : "Approve"}
+      </Button>
+    </div>
+  );
+}
+
 export function MotivationSection({ data }: { data: DashboardData }) {
   const { visible, keyById } = useScoped(data);
   const rewards = data.rewards.filter((r) => {
@@ -240,21 +271,17 @@ export function MotivationSection({ data }: { data: DashboardData }) {
                   last={i === arr.length - 1}
                   leading={<StatusPill variant={keyById.get(r.learner_id) ?? "rupert"}>{r.learner}</StatusPill>}
                   title={r.reward}
-                  subtitle={`${r.reward_type ?? "reward"} · ${r.cost_xp ?? 0} XP · ${
-                    r.affordable ? "earned" : "not yet earned"
+                  subtitle={`${r.reward_type ?? "reward"} · ${r.coins_reserved ?? r.cost_coins ?? 0} 🪙 reserved${
+                    r.scheduled_for ? ` · for ${r.scheduled_for}` : ""
                   }`}
-                  trailing={
-                    <Button variant="primary" size="sm" disabled={!r.affordable}>
-                      Approve
-                    </Button>
-                  }
+                  trailing={<RewardActions id={r.learner_reward_id} />}
                 />
               ))}
             </div>
           )}
           <p className="mt-3 border-t border-hairline pt-3 text-[12px] text-ink-3">
-            Approve is a lever; the approval <i>write-back</i> (updating <code>learner_rewards.status</code>)
-            is a backend dependency — see the handoff flags.
+            The boys&rsquo; coins are <i>reserved</i> when they request. Approve charges them and
+            marks it fulfilled; Decline releases the coins straight back — a &ldquo;no&rdquo; costs them nothing.
           </p>
         </CardBody>
       </Card>
