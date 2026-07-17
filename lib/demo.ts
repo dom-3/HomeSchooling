@@ -257,6 +257,10 @@ export function demoDashboard(): DashboardData {
         balance_now: 2600,
       },
     ],
+    payday: [
+      { learner_id: RUPERT_ID, learner: "Rupert", week_start: today(), base_gbp: 5, per_output_gbp: 1, weekly_cap_gbp: 25, weekly_target: 10, outputs: 12, amount_gbp: 17, status: "pending", paid_at: null },
+      { learner_id: ALBIE_ID, learner: "Albie", week_start: today(), base_gbp: 5, per_output_gbp: 1, weekly_cap_gbp: 25, weekly_target: 10, outputs: 6, amount_gbp: 11, status: "pending", paid_at: null },
+    ],
     demo: true,
   };
 }

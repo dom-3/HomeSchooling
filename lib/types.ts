@@ -119,6 +119,21 @@ export interface RewardRow {
   balance_now: number | null;
 }
 
+/** v_payday — this week's real-£ pocket-money payslip per learner. */
+export interface PaydayRow {
+  learner_id: string;
+  learner: string;
+  week_start: string;
+  base_gbp: number | string;
+  per_output_gbp: number | string;
+  weekly_cap_gbp: number | string;
+  weekly_target: number;
+  outputs: number;
+  amount_gbp: number | string;
+  status: string;
+  paid_at: string | null;
+}
+
 /** The full bundle the dashboard server-fetches once (all learners). */
 export interface DashboardData {
   rings: RingRow[];
@@ -129,6 +144,7 @@ export interface DashboardData {
   sessions: SessionRow[];
   motivation: MotivationRow[];
   rewards: RewardRow[];
+  payday: PaydayRow[];
   /** stable learner_id → identity map, derived from whatever rows resolved. */
   learners: LearnerInfo[];
   demo: boolean;

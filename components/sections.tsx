@@ -216,12 +216,39 @@ function RewardActions({ id }: { id: string }) {
   );
 }
 
+/** Pay button for a boy's weekly pocket-money payslip (admin, live). */
+function PaydayActions({ learnerId, paid }: { learnerId: string; paid: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  async function pay() {
+    if (busy || paid) return;
+    setBusy(true);
+    try {
+      await fetch("/api/payday/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ learnerId }),
+      });
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (paid) return <StatusPill variant="neutral">Paid ✓</StatusPill>;
+  return (
+    <Button variant="primary" size="sm" disabled={busy} onClick={pay}>
+      {busy ? "…" : "Mark paid"}
+    </Button>
+  );
+}
+
 export function MotivationSection({ data }: { data: DashboardData }) {
   const { visible, keyById } = useScoped(data);
   const rewards = data.rewards.filter((r) => {
     const k = keyById.get(r.learner_id);
     return visible.some((v) => v.id === r.learner_id) && k;
   });
+  const payday = data.payday.filter((p) => visible.some((v) => v.id === p.learner_id));
 
   if (visible.length === 0) {
     return <EmptyCardNote title="No streaks yet" sub="Streaks, XP and rewards build as you log." />;
@@ -282,6 +309,33 @@ export function MotivationSection({ data }: { data: DashboardData }) {
           <p className="mt-3 border-t border-hairline pt-3 text-[12px] text-ink-3">
             The boys&rsquo; coins are <i>reserved</i> when they request. Approve charges them and
             marks it fulfilled; Decline releases the coins straight back — a &ldquo;no&rdquo; costs them nothing.
+          </p>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader icon="💷" title="Payday — pocket money" />
+        <CardBody>
+          {payday.length === 0 ? (
+            <p className="py-2 text-[12.5px] text-ink-3">No payslips this week yet.</p>
+          ) : (
+            <div className="flex flex-col">
+              {payday.map((p, i, arr) => (
+                <ListRow
+                  key={p.learner_id}
+                  last={i === arr.length - 1}
+                  leading={<StatusPill variant={keyById.get(p.learner_id) ?? "rupert"}>{p.learner}</StatusPill>}
+                  title={`£${Number(p.amount_gbp).toFixed(2)} this week`}
+                  subtitle={`${p.outputs} skill${p.outputs === 1 ? "" : "s"} mastered · target ${p.weekly_target} · £${Number(
+                    p.base_gbp
+                  ).toFixed(0)} base + £${Number(p.per_output_gbp).toFixed(0)}/skill (cap £${Number(p.weekly_cap_gbp).toFixed(0)})`}
+                  trailing={<PaydayActions learnerId={p.learner_id} paid={p.status === "paid"} />}
+                />
+              ))}
+            </div>
+          )}
+          <p className="mt-3 border-t border-hairline pt-3 text-[12px] text-ink-3">
+            Real £, paid weekly — tied to <i>outputs</i> (skills mastered), not just effort. On payday, check the amount and mark it paid.
           </p>
         </CardBody>
       </Card>

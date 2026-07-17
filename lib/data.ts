@@ -15,6 +15,7 @@ import type {
   SessionRow,
   MotivationRow,
   RewardRow,
+  PaydayRow,
 } from "@/lib/types";
 
 /**
@@ -57,6 +58,7 @@ async function _getDashboardData(): Promise<DashboardData> {
     sessions,
     motivation,
     rewards,
+    payday,
   ] = await Promise.all([
     safe<RingRow>("v_today_rings"),
     safe<PlanRow>("v_today_plan"),
@@ -66,6 +68,7 @@ async function _getDashboardData(): Promise<DashboardData> {
     safe<SessionRow>("v_upcoming_sessions"),
     safe<MotivationRow>("v_motivation_pulse"),
     safe<RewardRow>("v_rewards_to_approve"),
+    safe<PaydayRow>("v_payday"),
   ]);
 
   return {
@@ -77,6 +80,7 @@ async function _getDashboardData(): Promise<DashboardData> {
     sessions,
     motivation,
     rewards,
+    payday,
     learners: deriveLearners(mastery, motivation, rings),
     demo: false,
   };
