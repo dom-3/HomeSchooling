@@ -61,6 +61,22 @@ export interface LevelRow {
   name: string;
   xp_required: number;
 }
+export interface CosmeticItem {
+  item_key: string;
+  scope: string;
+  category: string;
+  label: string;
+  icon: string | null;
+  cost_coins: number;
+  sort: number;
+}
+export interface BondQuest {
+  quest_key: string;
+  label: string;
+  icon: string | null;
+  team_points: number;
+  is_teach: boolean;
+}
 
 export interface KidHome {
   learner: KidLearner | null;
@@ -70,6 +86,9 @@ export interface KidHome {
   shop: ShopItem[];
   team: TeamProgress | null;
   levels: LevelRow[];
+  cosmetics: CosmeticItem[];
+  owned: string[];
+  bondQuests: BondQuest[];
 }
 
 /** For the boy-picker on the PIN gate. */
@@ -85,7 +104,7 @@ export async function getLearnersForPicker(): Promise<KidLearner[]> {
 /** Everything one boy's home screen needs, in one round of reads. */
 export async function getKidHome(learnerId: string): Promise<KidHome> {
   const a = getAdminClient();
-  const [learner, pulse, wallet, plan, shop, team, levels] = await Promise.all([
+  const [learner, pulse, wallet, plan, shop, team, levels, cosmetics, owned, bonds] = await Promise.all([
     a.from("learners").select("id, name, interests, photo_url").eq("id", learnerId).maybeSingle(),
     a.from("v_motivation_pulse").select("*").eq("learner_id", learnerId).maybeSingle(),
     a.from("v_coin_wallet").select("balance, net_today").eq("learner_id", learnerId).maybeSingle(),
@@ -93,6 +112,9 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     a.from("v_reward_shop").select("*").eq("learner_id", learnerId),
     a.from("v_team_progress").select("*").maybeSingle(),
     a.from("levels").select("level, name, xp_required").order("xp_required", { ascending: true }),
+    a.from("cosmetic_catalog").select("item_key, scope, category, label, icon, cost_coins, sort").eq("active", true).order("sort", { ascending: true }),
+    a.from("learner_cosmetics").select("item_key").eq("learner_id", learnerId),
+    a.from("bond_quests").select("quest_key, label, icon, team_points, is_teach").eq("active", true).order("sort", { ascending: true }),
   ]);
   return {
     learner: (learner.data ?? null) as KidLearner | null,
@@ -102,5 +124,8 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     shop: (shop.data ?? []) as ShopItem[],
     team: (team.data ?? null) as TeamProgress | null,
     levels: (levels.data ?? []) as LevelRow[],
+    cosmetics: (cosmetics.data ?? []) as CosmeticItem[],
+    owned: ((owned.data ?? []) as { item_key: string }[]).map((o) => o.item_key),
+    bondQuests: (bonds.data ?? []) as BondQuest[],
   };
 }

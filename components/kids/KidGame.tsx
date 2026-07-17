@@ -43,7 +43,8 @@ export function KidGame({ home }: { home: KidHome }) {
   const router = useRouter();
   const name = home.learner?.name ?? "You";
   const t = theme(name);
-  const [tab, setTab] = useState<"quests" | "rewards">("quests");
+  const boyKey = name.toLowerCase().includes("rupert") ? "rupert" : "albie";
+  const [tab, setTab] = useState<"quests" | "rewards" | "base" | "team">("quests");
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Set<string>>(new Set());
@@ -111,6 +112,22 @@ export function KidGame({ home }: { home: KidHome }) {
     setBusy(false);
   }
 
+  async function buy(itemKey: string) {
+    if (busy) return;
+    setBusy(true);
+    const r = await post("/api/kids/buy-cosmetic", { itemKey });
+    if (r?.ok) {
+      flash("Nice upgrade! 🛠️");
+      router.refresh();
+    } else {
+      flash(
+        r?.reason === "insufficient" ? "Keep earning! 💪" : r?.reason === "already_owned" ? "Already yours ✓" : "Try again",
+        false
+      );
+    }
+    setBusy(false);
+  }
+
   async function redeem(item: ShopItem) {
     if (busy || item.in_flight) return;
     setBusy(true);
@@ -157,7 +174,9 @@ export function KidGame({ home }: { home: KidHome }) {
       {/* TABS */}
       <div className="k-tabs">
         <button className={"k-tab" + (tab === "quests" ? " on" : "")} onClick={() => setTab("quests")}>🎯 Quests</button>
-        <button className={"k-tab" + (tab === "rewards" ? " on" : "")} onClick={() => setTab("rewards")}>🎁 Rewards</button>
+        <button className={"k-tab" + (tab === "rewards" ? " on" : "")} onClick={() => setTab("rewards")}>🎁 Shop</button>
+        <button className={"k-tab" + (tab === "base" ? " on" : "")} onClick={() => setTab("base")}>{boyKey === "rupert" ? "🏠 Garage" : "🏝️ Island"}</button>
+        <button className={"k-tab" + (tab === "team" ? " on" : "")} onClick={() => setTab("team")}>🤝 Team</button>
       </div>
 
       {/* QUESTS */}
@@ -230,6 +249,71 @@ export function KidGame({ home }: { home: KidHome }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* BASE */}
+      {tab === "base" && (
+        <div>
+          <div className="k-wallet">
+            <div className="k-wlab">🪙 Coins to spend</div>
+            <div className="k-wbal">{coins}</div>
+          </div>
+          <div className="k-th">{boyKey === "rupert" ? "🏠 Kit out your garage" : "🏝️ Build up your island"}</div>
+          <div className="k-scene">
+            {home.cosmetics
+              .filter((c) => c.scope === boyKey || c.scope === "shared")
+              .map((c) => {
+                const isOwned = home.owned.includes(c.item_key);
+                const can = coins >= c.cost_coins;
+                return (
+                  <div className={"k-slot" + (isOwned ? " have" : "")} key={c.item_key}>
+                    <div className="si">{isOwned ? c.icon ?? "✨" : "🔒"}</div>
+                    <div className="sl">{c.label}</div>
+                    {isOwned ? (
+                      <span className="sb owned">Owned ✓</span>
+                    ) : (
+                      <button className={"sb" + (can ? "" : " cant")} disabled={busy || !can} onClick={() => can && buy(c.item_key)}>
+                        {c.cost_coins} 🪙
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* TEAM */}
+      {tab === "team" && (
+        <div>
+          <div className="k-th">🤝 Team Pullen — you &amp; your brother</div>
+          {home.team ? (
+            <div className="k-goalcard">
+              <div className="k-goalname">
+                <span>{home.team.icon ?? "🎯"} {home.team.name}</span>
+                <span>{home.team.team_points}/{home.team.target_points}</span>
+              </div>
+              <div className="k-tbar">
+                <div className="k-tfill" style={{ width: Math.min(100, home.team.pct) + "%" }} />
+              </div>
+              <div className="k-tmeta">
+                {home.team.reward_blurb} · {home.team.bond_quests_done}/{home.team.min_bond_quests} bonding quests done together
+                {home.team.unlockable ? " · READY! 🎉" : ""}
+              </div>
+            </div>
+          ) : (
+            <div className="k-empty">Your team goal is warming up…</div>
+          )}
+          <div className="k-th">🌟 Do these together</div>
+          {home.bondQuests.map((b) => (
+            <div className="k-bond" key={b.quest_key}>
+              <span className="bi">{b.icon ?? "🌟"}</span>
+              <span className="bn">{b.label}</span>
+              <span className="bp">+{b.team_points}</span>
+            </div>
+          ))}
+          <p className="k-hint">Ask a grown-up to tick these off when you do them together.</p>
         </div>
       )}
 
