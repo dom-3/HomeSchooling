@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { KidHome, ShopItem } from "@/lib/kids/data";
 
@@ -20,6 +20,21 @@ const SUBJECT_SHORT: Record<string, string> = {
 /** Zig-zag x positions (%) for the winding path. */
 const MAP_X = [50, 24, 72, 30, 68, 26, 70, 44];
 const MAP_STEP = 70;
+
+/**
+ * Unlockable voice packs → on-device browser speech settings.
+ * No API, no cost, nothing leaves the device. "Normal" is always free.
+ */
+const DEFAULT_VOICE = "voice.default";
+const VOICE_PACKS: Record<string, { label: string; icon: string; pitch: number; rate: number }> = {
+  "voice.default": { label: "Normal voice", icon: "🔊", pitch: 1, rate: 1 },
+  "voice.robot": { label: "Robot voice", icon: "🤖", pitch: 0.4, rate: 0.95 },
+  "voice.chipmunk": { label: "Chipmunk voice", icon: "🐿️", pitch: 1.9, rate: 1.15 },
+  "voice.wizard": { label: "Wizard voice", icon: "🧙", pitch: 0.7, rate: 0.8 },
+  "voice.dragon": { label: "Welsh Dragon voice", icon: "🐉", pitch: 0.25, rate: 0.85 },
+  "voice.racer": { label: "Race Commentator voice", icon: "🏎️", pitch: 1.15, rate: 1.4 },
+  "voice.giant": { label: "Friendly Giant voice", icon: "🗿", pitch: 0.3, rate: 0.75 },
+};
 
 const TIERS: { key: string; label: string }[] = [
   { key: "screen_time", label: "🎮 Game time" },
@@ -59,6 +74,46 @@ export function KidGame({ home }: { home: KidHome }) {
   const [done, setDone] = useState<Set<string>>(new Set());
   const [chestUsed, setChestUsed] = useState(false);
   const [sel, setSel] = useState<number | null>(null);
+  const [voice, setVoice] = useState<string>(DEFAULT_VOICE);
+
+  // Remember each boy's chosen voice on his device.
+  const voiceKey = `hshq_voice_${home.learner?.id ?? "x"}`;
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(voiceKey);
+      if (saved && VOICE_PACKS[saved]) setVoice(saved);
+    } catch {
+      /* storage unavailable — stay on the default voice */
+    }
+  }, [voiceKey]);
+
+  function chooseVoice(key: string) {
+    setVoice(key);
+    try {
+      window.localStorage.setItem(voiceKey, key);
+    } catch {
+      /* ignore */
+    }
+    speakWith(key, VOICE_PACKS[key]?.label ?? "Voice ready");
+  }
+
+  /** Speak text on-device with a given pack. */
+  function speakWith(packKey: string, text: string) {
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const p = VOICE_PACKS[packKey] ?? VOICE_PACKS[DEFAULT_VOICE];
+      u.pitch = p.pitch;
+      u.rate = p.rate;
+      u.lang = "en-GB";
+      synth.speak(u);
+    } catch {
+      /* speech unsupported — silently ignore */
+    }
+  }
+  const speak = (text: string) => speakWith(voice, text);
 
   const pulse = home.pulse;
   const totalXp = pulse?.total_xp ?? 0;
@@ -297,7 +352,7 @@ export function KidGame({ home }: { home: KidHome }) {
           <div className="k-th">{boyKey === "rupert" ? "🏠 Kit out your garage" : "🏝️ Build up your island"}</div>
           <div className="k-scene">
             {home.cosmetics
-              .filter((c) => c.scope === boyKey || c.scope === "shared")
+              .filter((c) => c.category === "base" && (c.scope === boyKey || c.scope === "shared"))
               .map((c) => {
                 const isOwned = home.owned.includes(c.item_key);
                 const can = coins >= c.cost_coins;
@@ -316,6 +371,48 @@ export function KidGame({ home }: { home: KidHome }) {
                 );
               })}
           </div>
+
+          <div className="k-th">🔊 Voices — unlock a new one</div>
+          <div className="k-card">
+            <div className="k-ic">🔊</div>
+            <div className="k-mid">
+              <div className="k-t">Normal voice</div>
+              <div className="k-sub">Always yours</div>
+            </div>
+            {voice === DEFAULT_VOICE ? (
+              <button className="k-btn done">In use ✓</button>
+            ) : (
+              <button className="k-btn go" onClick={() => chooseVoice(DEFAULT_VOICE)}>Use</button>
+            )}
+          </div>
+          {home.cosmetics
+            .filter((c) => c.category === "voice")
+            .map((c) => {
+              const isOwned = home.owned.includes(c.item_key);
+              const can = coins >= c.cost_coins;
+              const inUse = voice === c.item_key;
+              return (
+                <div className="k-card" key={c.item_key}>
+                  <div className="k-ic">{isOwned ? c.icon ?? "🔊" : "🔒"}</div>
+                  <div className="k-mid">
+                    <div className="k-t">{c.label}</div>
+                    <div className="k-sub">{isOwned ? "unlocked" : `${c.cost_coins} 🪙 to unlock`}</div>
+                  </div>
+                  {isOwned ? (
+                    inUse ? (
+                      <button className="k-btn done">In use ✓</button>
+                    ) : (
+                      <button className="k-btn go" onClick={() => chooseVoice(c.item_key)}>Use</button>
+                    )
+                  ) : (
+                    <button className={"k-btn " + (can ? "go" : "lock")} disabled={busy || !can} onClick={() => can && buy(c.item_key)}>
+                      {c.cost_coins} 🪙
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          <p className="k-hint">Tap 🔊 on a quest to hear it read out in your voice.</p>
         </div>
       )}
 
@@ -362,13 +459,20 @@ export function KidGame({ home }: { home: KidHome }) {
             <div className="k-sheetcard">
               <div className="k-qtop">
                 <div className="k-ic">{SUBJECT_ICON[q.subject ?? ""] ?? "⭐"}</div>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="k-t">{q.skill ?? "Learning quest"}</div>
                   <div className="k-sub">
                     {q.subject ?? ""}
                     {q.item_kind === "review" ? " · review" : ""}
                   </div>
                 </div>
+                <button
+                  className="k-btn go"
+                  title="Read it to me"
+                  onClick={() => speak(`Your quest. ${q.skill ?? ""}. ${q.subject ?? ""}.`)}
+                >
+                  🔊
+                </button>
               </div>
               {isDone ? (
                 <button className="k-smash" style={{ background: "#22c55e", boxShadow: "0 4px 0 #15803d" }} disabled>
