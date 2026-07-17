@@ -28,12 +28,27 @@ export async function POST(req: NextRequest) {
     : "got_it";
 
   const admin = getAdminClient();
+
+  // Time matters: credit_ledger is the legal audit trail of educational hours.
+  // The kids' portal doesn't ask a child to time themselves, so fall back to the
+  // skill's own estimated lesson length. Dominic can adjust any entry later.
+  let minutes = body.minutes ?? null;
+  if (minutes == null) {
+    const { data: ci } = await admin
+      .from("content_items")
+      .select("est_minutes")
+      .eq("skill_id", body.skillId)
+      .eq("ctype", "lesson")
+      .maybeSingle();
+    minutes = (ci as any)?.est_minutes ?? 20;
+  }
+
   const { data, error } = await admin.rpc("log_activity", {
     p_learner_id: learnerId,
     p_kind: "skill_practice",
     p_skill_id: body.skillId,
     p_result: result,
-    p_minutes: body.minutes ?? null,
+    p_minutes: minutes,
   });
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
