@@ -86,4 +86,28 @@ export const KIDS_CSS = `
 .k-bond .bn{flex:1;font-size:13px;font-weight:700}
 .k-bond .bp{font-size:11px;font-weight:800;color:var(--accent)}
 .k-hint{font-size:11px;opacity:.55;font-weight:600;margin-top:6px}
+/* adventure map (slice 2) */
+.k-mapwrap{background:var(--surface,#fff);border:2px solid var(--border,#eee);border-radius:18px;padding:6px;overflow:hidden}
+.k-map{position:relative;border-radius:14px;background:
+ radial-gradient(circle at 18% 10%,color-mix(in srgb,var(--accent) 8%,transparent) 0 12px,transparent 13px),
+ radial-gradient(circle at 82% 32%,color-mix(in srgb,var(--accent) 6%,transparent) 0 15px,transparent 16px),
+ radial-gradient(circle at 28% 70%,color-mix(in srgb,var(--accent) 6%,transparent) 0 13px,transparent 14px)}
+.k-road{position:absolute;inset:0;width:100%;height:100%}
+.k-roadline{stroke:color-mix(in srgb,var(--accent) 28%,transparent)}
+.k-node{position:absolute;width:54px;height:54px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:23px;transform:translate(-50%,-50%);background:var(--muted-bg,#eee);color:#9aa3af;box-shadow:0 4px 0 rgba(0,0,0,.10);cursor:pointer;transition:background .2s,color .2s}
+.k-node.done{background:#22c55e;color:#fff;box-shadow:0 4px 0 #16a34a}
+.k-node.cur{background:var(--accent);color:#fff;box-shadow:0 5px 0 var(--accent2);animation:kbob 1.1s infinite}
+@keyframes kbob{0%,100%{transform:translate(-50%,-50%)}50%{transform:translate(-50%,-62%)}}
+.k-cap{position:absolute;bottom:-15px;font-size:9px;font-weight:800;white-space:nowrap;opacity:.7;left:50%;transform:translateX(-50%);color:var(--text,#555)}
+.k-ring{position:absolute;width:70px;height:70px;border-radius:50%;border:3px solid var(--accent);left:50%;top:50%;transform:translate(-50%,-50%);animation:kpulse 1.3s ease-out infinite;pointer-events:none}
+@keyframes kpulse{0%{transform:translate(-50%,-50%) scale(.7);opacity:.8}100%{transform:translate(-50%,-50%) scale(1.25);opacity:0}}
+.k-heroav{position:absolute;font-size:28px;transform:translate(-50%,-118%);transition:left .6s cubic-bezier(.34,1.4,.5,1),top .6s cubic-bezier(.34,1.4,.5,1);z-index:5;filter:drop-shadow(0 3px 2px rgba(0,0,0,.25));pointer-events:none}
+.k-sheet{position:fixed;left:50%;bottom:12px;width:min(512px,92vw);transform:translateX(-50%) translateY(180%);transition:transform .35s cubic-bezier(.2,.9,.3,1);z-index:40}
+.k-sheet.up{transform:translateX(-50%) translateY(0)}
+.k-sheetcard{background:var(--surface,#fff);border:2px solid var(--accent);border-radius:18px;padding:15px;box-shadow:0 -8px 28px rgba(0,0,0,.18)}
+.k-qtop{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.k-smash{width:100%;border:none;background:var(--accent);color:#fff;font-size:16px;font-weight:900;padding:12px;border-radius:14px;cursor:pointer;box-shadow:0 4px 0 var(--accent2)}
+.k-smash:active{transform:translateY(2px);box-shadow:0 2px 0 var(--accent2)}
+.k-smash[disabled]{opacity:.6}
+.k-later{width:100%;border:none;background:transparent;color:#999;font-size:12px;font-weight:700;padding:8px 0 0;cursor:pointer}
 `;

@@ -12,6 +12,15 @@ const SUBJECT_ICON: Record<string, string> = {
   "Science & Engineering": "🔬", "Creation & Expressive Arts": "🎨",
   "Health, PE & Wellbeing": "⚡", "Life & Enterprise": "💰",
 };
+const SUBJECT_SHORT: Record<string, string> = {
+  Maths: "Maths", Reading: "Read", Writing: "Write", Welsh: "Cymraeg",
+  "Science & Engineering": "Science", "Creation & Expressive Arts": "Create",
+  "Health, PE & Wellbeing": "Move", "Life & Enterprise": "Money",
+};
+/** Zig-zag x positions (%) for the winding path. */
+const MAP_X = [50, 24, 72, 30, 68, 26, 70, 44];
+const MAP_STEP = 70;
+
 const TIERS: { key: string; label: string }[] = [
   { key: "screen_time", label: "🎮 Game time" },
   { key: "treat", label: "🍨 Treats" },
@@ -49,6 +58,7 @@ export function KidGame({ home }: { home: KidHome }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Set<string>>(new Set());
   const [chestUsed, setChestUsed] = useState(false);
+  const [sel, setSel] = useState<number | null>(null);
 
   const pulse = home.pulse;
   const totalXp = pulse?.total_xp ?? 0;
@@ -64,6 +74,11 @@ export function KidGame({ home }: { home: KidHome }) {
   const lvPct = next && cur ? Math.min(100, Math.round(((totalXp - cur.xp_required) / (next.xp_required - cur.xp_required)) * 100)) : 100;
   const levelName = pulse?.level_name ?? cur?.name ?? "Rookie";
   const levelNo = pulse?.level ?? cur?.level ?? 1;
+
+  // Adventure map layout: one node per quest, winding down the path.
+  const mapH = 40 + Math.max(0, home.plan.length - 1) * MAP_STEP + 56;
+  const nodes = home.plan.map((q, i) => ({ q, x: MAP_X[i % MAP_X.length], y: 40 + i * MAP_STEP }));
+  const curIdx = home.plan.findIndex((q) => q.skill_id && !done.has(q.skill_id));
 
   function flash(msg: string, party = true) {
     setToast(msg);
@@ -179,29 +194,49 @@ export function KidGame({ home }: { home: KidHome }) {
         <button className={"k-tab" + (tab === "team" ? " on" : "")} onClick={() => setTab("team")}>🤝 Team</button>
       </div>
 
-      {/* QUESTS */}
+      {/* QUESTS — the adventure map */}
       {tab === "quests" && (
         <div>
-          {home.plan.length === 0 && <div className="k-empty">No quests right now — nice work! 🎉</div>}
-          {home.plan.map((q, i) => {
-            const isDone = q.skill_id ? done.has(q.skill_id) : false;
-            return (
-              <div className={"k-card" + (isDone ? " done" : "")} key={(q.skill_id ?? "x") + i}>
-                <div className="k-ic">{SUBJECT_ICON[q.subject ?? ""] ?? "⭐"}</div>
-                <div className="k-mid">
-                  <div className="k-t">{q.skill ?? "Learning quest"}</div>
-                  <div className="k-sub">{q.subject ?? ""}{q.item_kind === "review" ? " · review" : ""}</div>
-                </div>
-                {isDone ? (
-                  <button className="k-btn done">Done ✓</button>
-                ) : (
-                  <button className="k-btn go" disabled={busy || !q.skill_id} onClick={() => q.skill_id && smash(q.skill_id)}>
-                    Smash it! 💥
-                  </button>
+          {home.plan.length === 0 ? (
+            <div className="k-empty">No quests right now — nice work! 🎉</div>
+          ) : (
+            <div className="k-mapwrap">
+              <div className="k-map" style={{ height: mapH }}>
+                <svg className="k-road" viewBox={`0 0 100 ${mapH}`} preserveAspectRatio="none">
+                  <polyline
+                    className="k-roadline"
+                    points={nodes.map((n) => `${n.x},${n.y}`).join(" ")}
+                    fill="none"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeDasharray="2 5"
+                  />
+                </svg>
+                {nodes.map((n, i) => {
+                  const isDone = n.q.skill_id ? done.has(n.q.skill_id) : false;
+                  const isCur = i === curIdx;
+                  return (
+                    <button
+                      key={(n.q.skill_id ?? "x") + i}
+                      className={"k-node" + (isDone ? " done" : "") + (isCur ? " cur" : "")}
+                      style={{ left: n.x + "%", top: n.y + "px" }}
+                      onClick={() => setSel(i)}
+                    >
+                      {isCur && <span className="k-ring" />}
+                      <span>{isDone ? "✓" : SUBJECT_ICON[n.q.subject ?? ""] ?? "⭐"}</span>
+                      <span className="k-cap">{SUBJECT_SHORT[n.q.subject ?? ""] ?? n.q.subject ?? ""}</span>
+                    </button>
+                  );
+                })}
+                {curIdx >= 0 && nodes[curIdx] && (
+                  <div className="k-heroav" style={{ left: nodes[curIdx].x + "%", top: nodes[curIdx].y + "px" }}>
+                    {t.ava}
+                  </div>
                 )}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       )}
 
@@ -316,6 +351,49 @@ export function KidGame({ home }: { home: KidHome }) {
           <p className="k-hint">Ask a grown-up to tick these off when you do them together.</p>
         </div>
       )}
+
+      {/* QUEST SHEET — opens when a map node is tapped */}
+      {(() => {
+        const q = sel !== null ? home.plan[sel] : null;
+        if (!q) return null;
+        const isDone = q.skill_id ? done.has(q.skill_id) : false;
+        return (
+          <div className="k-sheet up">
+            <div className="k-sheetcard">
+              <div className="k-qtop">
+                <div className="k-ic">{SUBJECT_ICON[q.subject ?? ""] ?? "⭐"}</div>
+                <div>
+                  <div className="k-t">{q.skill ?? "Learning quest"}</div>
+                  <div className="k-sub">
+                    {q.subject ?? ""}
+                    {q.item_kind === "review" ? " · review" : ""}
+                  </div>
+                </div>
+              </div>
+              {isDone ? (
+                <button className="k-smash" style={{ background: "#22c55e", boxShadow: "0 4px 0 #15803d" }} disabled>
+                  Done ✓
+                </button>
+              ) : (
+                <button
+                  className="k-smash"
+                  disabled={busy || !q.skill_id}
+                  onClick={() => {
+                    const sid = q.skill_id;
+                    setSel(null);
+                    if (sid) smash(sid);
+                  }}
+                >
+                  Smash it! 💥
+                </button>
+              )}
+              <button className="k-later" onClick={() => setSel(null)}>
+                close
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className={"k-toast" + (toast ? " show" : "")}>{toast}</div>
     </div>
