@@ -16,6 +16,7 @@ import type {
   MotivationRow,
   RewardRow,
   PaydayRow,
+  TutorRow,
 } from "@/lib/types";
 
 /**
@@ -59,6 +60,7 @@ async function _getDashboardData(): Promise<DashboardData> {
     motivation,
     rewards,
     payday,
+    tutor,
   ] = await Promise.all([
     safe<RingRow>("v_today_rings"),
     safe<PlanRow>("v_today_plan"),
@@ -69,6 +71,22 @@ async function _getDashboardData(): Promise<DashboardData> {
     safe<MotivationRow>("v_motivation_pulse"),
     safe<RewardRow>("v_rewards_to_approve"),
     safe<PaydayRow>("v_payday"),
+    (async (): Promise<TutorRow[]> => {
+      try {
+        const { data, error } = await admin
+          .from("v_tutor_recent")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(40);
+        if (error) {
+          console.warn(`[data] v_tutor_recent read failed: ${error.message}`);
+          return [];
+        }
+        return (data ?? []) as TutorRow[];
+      } catch {
+        return [];
+      }
+    })(),
   ]);
 
   return {
@@ -81,6 +99,7 @@ async function _getDashboardData(): Promise<DashboardData> {
     motivation,
     rewards,
     payday,
+    tutor,
     learners: deriveLearners(mastery, motivation, rings),
     demo: false,
   };

@@ -261,6 +261,20 @@ export function demoDashboard(): DashboardData {
       { learner_id: RUPERT_ID, learner: "Rupert", week_start: today(), base_gbp: 5, per_output_gbp: 1, weekly_cap_gbp: 25, weekly_target: 10, outputs: 12, amount_gbp: 17, status: "pending", paid_at: null },
       { learner_id: ALBIE_ID, learner: "Albie", week_start: today(), base_gbp: 5, per_output_gbp: 1, weekly_cap_gbp: 25, weekly_target: 10, outputs: 6, amount_gbp: 11, status: "pending", paid_at: null },
     ],
+    tutor: [
+      {
+        id: "tm2", learner_id: RUPERT_ID, learner: "Rupert", skill_id: "s1",
+        skill: "Place value to 10,000 and rounding", subject: "Maths", role: "coach",
+        text: "Good thinking! Look at the digit just to the right of the hundreds — what does it tell you to do?",
+        created_at: today(),
+      },
+      {
+        id: "tm1", learner_id: RUPERT_ID, learner: "Rupert", skill_id: "s1",
+        skill: "Place value to 10,000 and rounding", subject: "Maths", role: "child",
+        text: "how do i round 3847 to the nearest hundred",
+        created_at: today(),
+      },
+    ],
     demo: true,
   };
 }

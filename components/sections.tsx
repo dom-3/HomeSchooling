@@ -249,6 +249,7 @@ export function MotivationSection({ data }: { data: DashboardData }) {
     return visible.some((v) => v.id === r.learner_id) && k;
   });
   const payday = data.payday.filter((p) => visible.some((v) => v.id === p.learner_id));
+  const tutor = data.tutor.filter((m) => visible.some((v) => v.id === m.learner_id));
 
   if (visible.length === 0) {
     return <EmptyCardNote title="No streaks yet" sub="Streaks, XP and rewards build as you log." />;
@@ -336,6 +337,35 @@ export function MotivationSection({ data }: { data: DashboardData }) {
           )}
           <p className="mt-3 border-t border-hairline pt-3 text-[12px] text-ink-3">
             Real £, paid weekly — tied to <i>outputs</i> (skills mastered), not just effort. On payday, check the amount and mark it paid.
+          </p>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader icon="💬" title="Coach transcripts" />
+        <CardBody>
+          {tutor.length === 0 ? (
+            <p className="py-2 text-[12.5px] text-ink-3">
+              No coach conversations yet. Anything the boys ask the AI will appear here.
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {tutor.slice(0, 12).map((m, i, arr) => (
+                <ListRow
+                  key={m.id}
+                  last={i === arr.length - 1}
+                  leading={<StatusPill variant={keyById.get(m.learner_id) ?? "rupert"}>{m.learner}</StatusPill>}
+                  title={`${m.role === "child" ? "🧒" : "🤖"} ${m.text}`}
+                  subtitle={`${m.role === "child" ? "asked" : "coach replied"}${m.skill ? ` · ${m.skill}` : ""}${
+                    m.subject ? ` · ${m.subject}` : ""
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+          <p className="mt-3 border-t border-hairline pt-3 text-[12px] text-ink-3">
+            Every word the AI says to the boys is logged here. It only ever gives <i>hints</i>, never answers, and only
+            about the skill they&rsquo;re on — anything else it redirects to you.
           </p>
         </CardBody>
       </Card>

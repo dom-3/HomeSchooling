@@ -119,6 +119,19 @@ export interface RewardRow {
   balance_now: number | null;
 }
 
+/** v_tutor_recent — every AI-coach exchange, for parent audit. */
+export interface TutorRow {
+  id: string;
+  learner_id: string;
+  learner: string;
+  skill_id: string | null;
+  skill: string | null;
+  subject: string | null;
+  role: "child" | "coach";
+  text: string;
+  created_at: string;
+}
+
 /** v_payday — this week's real-£ pocket-money payslip per learner. */
 export interface PaydayRow {
   learner_id: string;
@@ -145,6 +158,7 @@ export interface DashboardData {
   motivation: MotivationRow[];
   rewards: RewardRow[];
   payday: PaydayRow[];
+  tutor: TutorRow[];
   /** stable learner_id → identity map, derived from whatever rows resolved. */
   learners: LearnerInfo[];
   demo: boolean;
