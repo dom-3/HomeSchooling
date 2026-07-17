@@ -75,6 +75,11 @@ export function KidGame({ home }: { home: KidHome }) {
   const [chestUsed, setChestUsed] = useState(false);
   const [sel, setSel] = useState<number | null>(null);
   const [voice, setVoice] = useState<string>(DEFAULT_VOICE);
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [coachMsgs, setCoachMsgs] = useState<{ role: "child" | "coach"; text: string }[]>([]);
+  const [coachInput, setCoachInput] = useState("");
+  const [coachBusy, setCoachBusy] = useState(false);
+  const [listening, setListening] = useState(false);
 
   // Remember each boy's chosen voice on his device.
   const voiceKey = `hshq_voice_${home.learner?.id ?? "x"}`;
@@ -114,6 +119,59 @@ export function KidGame({ home }: { home: KidHome }) {
     }
   }
   const speak = (text: string) => speakWith(voice, text);
+
+  /** Ask the AI coach about the currently open quest. Hints only, by design. */
+  async function askCoach(text: string) {
+    const q = sel !== null ? home.plan[sel] : null;
+    const msg = text.trim();
+    if (!q?.skill_id || !msg || coachBusy) return;
+    setCoachInput("");
+    setCoachMsgs((m) => [...m, { role: "child", text: msg }]);
+    setCoachBusy(true);
+    try {
+      const r = await post("/api/kids/tutor", { skillId: q.skill_id, message: msg });
+      const reply = r?.ok ? String(r.reply) : String(r?.error ?? "Try again in a moment.");
+      setCoachMsgs((m) => [...m, { role: "coach", text: reply }]);
+      if (r?.ok) speak(reply);
+    } catch {
+      setCoachMsgs((m) => [...m, { role: "coach", text: "I couldn't hear that — try again." }]);
+    } finally {
+      setCoachBusy(false);
+    }
+  }
+
+  /** Voice-activated question via on-device speech recognition. */
+  function startListening() {
+    try {
+      const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SR) {
+        flash("Talking isn't supported here — type it instead", false);
+        return;
+      }
+      const rec = new SR();
+      rec.lang = "en-GB";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      setListening(true);
+      rec.onresult = (e: any) => {
+        const said = e?.results?.[0]?.[0]?.transcript ?? "";
+        setListening(false);
+        if (said) askCoach(said);
+      };
+      rec.onerror = () => setListening(false);
+      rec.onend = () => setListening(false);
+      rec.start();
+    } catch {
+      setListening(false);
+    }
+  }
+
+  function openQuest(i: number) {
+    setSel(i);
+    setCoachOpen(false);
+    setCoachMsgs([]);
+    setCoachInput("");
+  }
 
   const pulse = home.pulse;
   const totalXp = pulse?.total_xp ?? 0;
@@ -276,7 +334,7 @@ export function KidGame({ home }: { home: KidHome }) {
                       key={(n.q.skill_id ?? "x") + i}
                       className={"k-node" + (isDone ? " done" : "") + (isCur ? " cur" : "")}
                       style={{ left: n.x + "%", top: n.y + "px" }}
-                      onClick={() => setSel(i)}
+                      onClick={() => openQuest(i)}
                     >
                       {isCur && <span className="k-ring" />}
                       <span>{isDone ? "✓" : SUBJECT_ICON[n.q.subject ?? ""] ?? "⭐"}</span>
@@ -489,6 +547,51 @@ export function KidGame({ home }: { home: KidHome }) {
                   }}
                 >
                   Smash it! 💥
+                </button>
+              )}
+              {coachOpen ? (
+                <div className="k-coach">
+                  <div className="k-coachlog">
+                    {coachMsgs.length === 0 && (
+                      <div className="k-coachhint">
+                        Stuck? Ask me anything about this quest — I&rsquo;ll give you a hint, not the answer 😉
+                        You can type, or tap 🎤 and just say it.
+                      </div>
+                    )}
+                    {coachMsgs.map((m, i) => (
+                      <div key={i} className={"k-msg " + (m.role === "child" ? "me" : "coach")}>
+                        {m.text}
+                      </div>
+                    ))}
+                    {coachBusy && <div className="k-msg coach">…thinking</div>}
+                  </div>
+                  <div className="k-coachrow">
+                    <button
+                      className={"k-mic" + (listening ? " on" : "")}
+                      title="Say it out loud"
+                      onClick={startListening}
+                      disabled={coachBusy}
+                    >
+                      {listening ? "🔴" : "🎤"}
+                    </button>
+                    <input
+                      className="k-input"
+                      value={coachInput}
+                      onChange={(e) => setCoachInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") askCoach(coachInput);
+                      }}
+                      placeholder="Ask your coach…"
+                      maxLength={500}
+                    />
+                    <button className="k-send" onClick={() => askCoach(coachInput)} disabled={coachBusy || !coachInput.trim()}>
+                      Ask
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button className="k-askbtn" onClick={() => setCoachOpen(true)}>
+                  💡 Stuck? Ask your coach
                 </button>
               )}
               <button className="k-later" onClick={() => setSel(null)}>

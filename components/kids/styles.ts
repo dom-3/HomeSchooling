@@ -110,4 +110,20 @@ export const KIDS_CSS = `
 .k-smash:active{transform:translateY(2px);box-shadow:0 2px 0 var(--accent2)}
 .k-smash[disabled]{opacity:.6}
 .k-later{width:100%;border:none;background:transparent;color:#999;font-size:12px;font-weight:700;padding:8px 0 0;cursor:pointer}
+/* AI coach */
+.k-coach{margin-top:12px;border-top:1px solid var(--border,#eee);padding-top:10px}
+.k-coachlog{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:9px}
+.k-coachhint{font-size:11.5px;font-weight:600;opacity:.6;line-height:1.4;padding:4px 2px}
+.k-msg{font-size:12.5px;font-weight:600;line-height:1.4;padding:8px 11px;border-radius:12px;max-width:88%}
+.k-msg.me{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.k-msg.coach{align-self:flex-start;background:var(--muted-bg,#f1f3f7);color:var(--text,#222);border-bottom-left-radius:4px}
+.k-coachrow{display:flex;gap:7px;align-items:center}
+.k-mic{flex:none;width:38px;height:38px;border:2px solid var(--border,#eee);background:var(--surface,#fff);border-radius:11px;font-size:16px;cursor:pointer}
+.k-mic.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);animation:kpulse2 1s infinite}
+@keyframes kpulse2{0%,100%{opacity:1}50%{opacity:.5}}
+.k-input{flex:1;min-width:0;border:2px solid var(--border,#eee);border-radius:11px;padding:9px 11px;font-size:13px;font-weight:600;font-family:inherit;outline:none}
+.k-input:focus{border-color:var(--accent)}
+.k-send{flex:none;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12.5px;padding:9px 13px;border-radius:11px;cursor:pointer;box-shadow:0 3px 0 var(--accent2)}
+.k-send[disabled]{opacity:.5;box-shadow:none}
+.k-askbtn{width:100%;margin-top:10px;border:2px dashed color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 7%,transparent);color:var(--accent);font-weight:800;font-size:13px;padding:10px;border-radius:12px;cursor:pointer}
 `;
