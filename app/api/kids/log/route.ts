@@ -29,6 +29,21 @@ export async function POST(req: NextRequest) {
 
   const admin = getAdminClient();
 
+  // F1: one practice log per skill per day. Stops repeat taps fabricating hours
+  // (the legal audit trail), XP and mastery %. The Boss Fight is the real gate.
+  const dayStart = new Date();
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const { data: existing } = await admin
+    .from("activity_events")
+    .select("id")
+    .eq("learner_id", learnerId)
+    .eq("skill_id", body.skillId)
+    .gte("ts", dayStart.toISOString())
+    .limit(1);
+  if (existing && existing.length > 0) {
+    return NextResponse.json({ ok: true, already: true, message: "Already practised today" });
+  }
+
   // Time matters: credit_ledger is the legal audit trail of educational hours.
   // The kids' portal doesn't ask a child to time themselves, so fall back to the
   // skill's own estimated lesson length. Dominic can adjust any entry later.

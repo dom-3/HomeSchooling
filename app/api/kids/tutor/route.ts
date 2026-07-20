@@ -87,6 +87,11 @@ export async function POST(req: NextRequest) {
   // The API needs the first message to be from the user.
   while (history.length && history[0].role !== "user") history.shift();
 
+  // F5: log the child's message FIRST, so it's captured even if the model errors.
+  await admin
+    .from("tutor_messages")
+    .insert({ learner_id: learnerId, skill_id: body.skillId, role: "child", text: message });
+
   let reply = "";
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -120,10 +125,9 @@ export async function POST(req: NextRequest) {
   }
   if (!reply) reply = "Have another go — what do you notice first?";
 
-  await admin.from("tutor_messages").insert([
-    { learner_id: learnerId, skill_id: body.skillId, role: "child", text: message },
-    { learner_id: learnerId, skill_id: body.skillId, role: "coach", text: reply },
-  ]);
+  await admin
+    .from("tutor_messages")
+    .insert({ learner_id: learnerId, skill_id: body.skillId, role: "coach", text: reply });
 
   return NextResponse.json({ ok: true, reply });
 }
