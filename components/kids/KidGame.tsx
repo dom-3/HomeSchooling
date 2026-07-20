@@ -245,6 +245,21 @@ export function KidGame({ home }: { home: KidHome }) {
     setBusy(false);
   }
 
+  async function doHabit(habitId: string) {
+    if (busy) return;
+    setBusy(true);
+    const r = await post("/api/kids/habit", { habitId });
+    if (r?.ok && !r.already) {
+      flash(`+${r.coins ?? 0} 🪙 · nice one!`);
+      router.refresh();
+    } else if (r?.already) {
+      flash("Already done today ✓", false);
+    } else {
+      flash("Try again", false);
+    }
+    setBusy(false);
+  }
+
   async function buy(itemKey: string) {
     if (busy) return;
     setBusy(true);
@@ -303,6 +318,36 @@ export function KidGame({ home }: { home: KidHome }) {
       <button className="k-chest" onClick={openChest} disabled={chestUsed || busy}>
         🎁 {chestUsed ? "Chest opened today" : "Open your daily chest"}
       </button>
+
+      {/* DAILY HABITS */}
+      {home.habits.filter((h) => h.scope === "shared" || h.scope === boyKey).length > 0 && (
+        <div className="k-habits">
+          <div className="k-habtitle">🌱 Daily habits</div>
+          {home.habits
+            .filter((h) => h.scope === "shared" || h.scope === boyKey)
+            .map((h) => (
+              <div className={"k-hab" + (h.done_today ? " done" : "")} key={h.habit_id}>
+                <span className="k-habic">{h.icon ?? "🌱"}</span>
+                <div className="k-habmid">
+                  <div className="k-habl">{h.label}</div>
+                  {h.note_to_child && <div className="k-habn">{h.note_to_child}</div>}
+                </div>
+                {h.resource_url && (
+                  <a className="k-habplay" href={h.resource_url} target="_blank" rel="noopener noreferrer" title="Open">
+                    ▶
+                  </a>
+                )}
+                {h.done_today ? (
+                  <span className="k-habtick">✓</span>
+                ) : (
+                  <button className="k-habbtn" disabled={busy} onClick={() => doHabit(h.habit_id)}>
+                    Do it
+                  </button>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
 
       {/* TABS */}
       <div className="k-tabs">

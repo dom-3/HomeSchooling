@@ -152,4 +152,18 @@ export const KIDS_CSS = `
 .k-bossghost{margin-top:12px;border:none;background:rgba(255,255,255,.12);color:#fff;font-weight:800;font-size:13px;padding:10px 20px;border-radius:12px;cursor:pointer;display:block;margin-left:auto;margin-right:auto}
 .k-spin{width:46px;height:46px;border:4px solid rgba(255,255,255,.18);border-top-color:#fbbf24;border-radius:50%;margin:0 auto 18px;animation:kspin 1s linear infinite}
 @keyframes kspin{to{transform:rotate(360deg)}}
+/* Daily habits */
+.k-habits{background:var(--surface,#fff);border:2px solid var(--border,#eee);border-radius:16px;padding:12px 13px;margin-top:12px}
+.k-habtitle{font-size:13px;font-weight:900;opacity:.7;margin-bottom:9px}
+.k-hab{display:flex;align-items:center;gap:11px;padding:8px 0;border-top:1px solid var(--muted-bg,#f0f0f0)}
+.k-hab:first-of-type{border-top:none}
+.k-hab.done{opacity:.6}
+.k-habic{width:36px;height:36px;flex:none;border-radius:11px;background:var(--muted-bg,#f4f6fa);display:flex;align-items:center;justify-content:center;font-size:19px}
+.k-habmid{flex:1;min-width:0}
+.k-habl{font-size:13.5px;font-weight:800;line-height:1.15}
+.k-habn{font-size:10.5px;font-weight:600;opacity:.6;margin-top:1px}
+.k-habplay{flex:none;text-decoration:none;width:32px;height:32px;border-radius:9px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px}
+.k-habbtn{flex:none;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12px;padding:8px 13px;border-radius:10px;cursor:pointer;box-shadow:0 3px 0 var(--accent2)}
+.k-habbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--accent2)}
+.k-habtick{flex:none;color:#22c55e;font-weight:900;font-size:16px;width:34px;text-align:center}
 `;

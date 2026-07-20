@@ -78,6 +78,21 @@ export interface BondQuest {
   is_teach: boolean;
 }
 
+export interface HabitItem {
+  habit_id: string;
+  habit_key: string;
+  label: string;
+  icon: string | null;
+  cadence: string;
+  per_week: number;
+  coins: number;
+  scope: string;
+  note_to_child: string | null;
+  resource_url: string | null;
+  done_today: boolean;
+  last7: number;
+}
+
 export interface KidHome {
   learner: KidLearner | null;
   pulse: KidPulse | null;
@@ -89,6 +104,7 @@ export interface KidHome {
   cosmetics: CosmeticItem[];
   owned: string[];
   bondQuests: BondQuest[];
+  habits: HabitItem[];
 }
 
 /** For the boy-picker on the PIN gate. */
@@ -104,7 +120,7 @@ export async function getLearnersForPicker(): Promise<KidLearner[]> {
 /** Everything one boy's home screen needs, in one round of reads. */
 export async function getKidHome(learnerId: string): Promise<KidHome> {
   const a = getAdminClient();
-  const [learner, pulse, wallet, plan, shop, team, levels, cosmetics, owned, bonds] = await Promise.all([
+  const [learner, pulse, wallet, plan, shop, team, levels, cosmetics, owned, bonds, habits] = await Promise.all([
     a.from("learners").select("id, name, interests, photo_url").eq("id", learnerId).maybeSingle(),
     a.from("v_motivation_pulse").select("*").eq("learner_id", learnerId).maybeSingle(),
     a.from("v_coin_wallet").select("balance, net_today").eq("learner_id", learnerId).maybeSingle(),
@@ -115,6 +131,7 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     a.from("cosmetic_catalog").select("item_key, scope, category, label, icon, cost_coins, sort").eq("active", true).order("sort", { ascending: true }),
     a.from("learner_cosmetics").select("item_key").eq("learner_id", learnerId),
     a.from("bond_quests").select("quest_key, label, icon, team_points, is_teach").eq("active", true).order("sort", { ascending: true }),
+    a.from("v_today_habits").select("*").eq("learner_id", learnerId).order("sort", { ascending: true }),
   ]);
   return {
     learner: (learner.data ?? null) as KidLearner | null,
@@ -127,5 +144,6 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     cosmetics: (cosmetics.data ?? []) as CosmeticItem[],
     owned: ((owned.data ?? []) as { item_key: string }[]).map((o) => o.item_key),
     bondQuests: (bonds.data ?? []) as BondQuest[],
+    habits: (habits.data ?? []) as HabitItem[],
   };
 }
