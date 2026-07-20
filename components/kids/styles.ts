@@ -128,4 +128,28 @@ export const KIDS_CSS = `
 .k-send{flex:none;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12.5px;padding:9px 13px;border-radius:11px;cursor:pointer;box-shadow:0 3px 0 var(--accent2)}
 .k-send[disabled]{opacity:.5;box-shadow:none}
 .k-askbtn{width:100%;margin-top:10px;border:2px dashed color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 7%,transparent);color:var(--accent);font-weight:800;font-size:13px;padding:10px;border-radius:12px;cursor:pointer}
+/* Boss Fight */
+.k-bossbtn2{width:100%;border:none;background:#111;color:#fff;font-size:16px;font-weight:900;padding:13px;border-radius:14px;cursor:pointer;box-shadow:0 4px 0 #000;letter-spacing:.02em}
+.k-bossbtn2:active{transform:translateY(2px);box-shadow:0 2px 0 #000}
+.k-didbtn{width:100%;border:none;background:transparent;color:var(--accent);font-weight:800;font-size:12.5px;padding:9px 0 0;cursor:pointer}
+.k-boss{position:fixed;inset:0;z-index:80;background:radial-gradient(circle at 50% 0%,#22263a,#0f1220 70%);color:#fff;display:flex;flex-direction:column;padding:20px 16px calc(20px + env(safe-area-inset-bottom));overflow-y:auto;font-family:'Fredoka','Inter',system-ui,sans-serif}
+.k-bosshead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.k-bosstag{font-size:13px;font-weight:800;color:#fbbf24;letter-spacing:.06em;text-transform:uppercase}
+.k-bossx{border:none;background:rgba(255,255,255,.12);color:#fff;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer}
+.k-bossskill{font-size:13px;font-weight:600;opacity:.7;margin-bottom:14px}
+.k-bossprog{height:8px;background:rgba(255,255,255,.15);border-radius:5px;overflow:hidden;margin-bottom:20px}
+.k-bossprogf{height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);transition:width .3s}
+.k-bossq{font-size:20px;font-weight:700;line-height:1.35;margin:2px 0 20px}
+.k-opts{display:flex;flex-direction:column;gap:11px}
+.k-opt{border:2px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;border-radius:14px;padding:15px 16px;font-size:15px;font-weight:700;text-align:left;cursor:pointer;font-family:inherit;transition:.12s}
+.k-opt:hover{border-color:#fbbf24;background:rgba(251,191,36,.14)}
+.k-opt:active{transform:scale(.99)}
+.k-bosscenter{margin:auto;text-align:center;max-width:340px;padding:20px 0}
+.k-bossbig{font-size:72px;line-height:1;animation:kbob 1s infinite}
+.k-bosswin{font-size:26px;font-weight:900;margin:12px 0 6px;color:#fbbf24}
+.k-bosssub{font-size:14px;font-weight:600;opacity:.85;line-height:1.5}
+.k-bossgo{margin-top:22px;border:none;background:#fbbf24;color:#111;font-weight:900;font-size:16px;padding:13px 26px;border-radius:14px;cursor:pointer;box-shadow:0 4px 0 #b45309}
+.k-bossghost{margin-top:12px;border:none;background:rgba(255,255,255,.12);color:#fff;font-weight:800;font-size:13px;padding:10px 20px;border-radius:12px;cursor:pointer;display:block;margin-left:auto;margin-right:auto}
+.k-spin{width:46px;height:46px;border:4px solid rgba(255,255,255,.18);border-top-color:#fbbf24;border-radius:50%;margin:0 auto 18px;animation:kspin 1s linear infinite}
+@keyframes kspin{to{transform:rotate(360deg)}}
 `;

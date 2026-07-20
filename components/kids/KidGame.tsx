@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { KidHome, ShopItem } from "@/lib/kids/data";
 import { Icon, type IconName } from "@/components/kids/icons";
+import { BossFight } from "@/components/kids/BossFight";
 
 function theme(name: string) {
   const r = name.toLowerCase().includes("rupert");
@@ -77,6 +78,7 @@ export function KidGame({ home }: { home: KidHome }) {
   const [done, setDone] = useState<Set<string>>(new Set());
   const [chestUsed, setChestUsed] = useState(false);
   const [sel, setSel] = useState<number | null>(null);
+  const [boss, setBoss] = useState<{ skillId: string; skill: string } | null>(null);
   const [voice, setVoice] = useState<string>(DEFAULT_VOICE);
   const [coachOpen, setCoachOpen] = useState(false);
   const [coachMsgs, setCoachMsgs] = useState<{ role: "child" | "coach"; text: string }[]>([]);
@@ -537,20 +539,33 @@ export function KidGame({ home }: { home: KidHome }) {
               </div>
               {isDone ? (
                 <button className="k-smash" style={{ background: "#22c55e", boxShadow: "0 4px 0 #15803d" }} disabled>
-                  Done ✓
+                  Practised ✓
                 </button>
               ) : (
-                <button
-                  className="k-smash"
-                  disabled={busy || !q.skill_id}
-                  onClick={() => {
-                    const sid = q.skill_id;
-                    setSel(null);
-                    if (sid) smash(sid);
-                  }}
-                >
-                  Smash it! 💥
-                </button>
+                <>
+                  <button
+                    className="k-bossbtn2"
+                    disabled={!q.skill_id}
+                    onClick={() => {
+                      const sid = q.skill_id;
+                      const nm = q.skill ?? "This skill";
+                      setSel(null);
+                      if (sid) setBoss({ skillId: sid, skill: nm });
+                    }}
+                  >
+                    👑 Take the Boss
+                  </button>
+                  <button
+                    className="k-didbtn"
+                    disabled={busy || !q.skill_id}
+                    onClick={() => {
+                      const sid = q.skill_id;
+                      if (sid) smash(sid);
+                    }}
+                  >
+                    I just did the lesson (+coins)
+                  </button>
+                </>
               )}
               {coachOpen ? (
                 <div className="k-coach">
@@ -604,6 +619,20 @@ export function KidGame({ home }: { home: KidHome }) {
           </div>
         );
       })()}
+
+      {boss && (
+        <BossFight
+          skillId={boss.skillId}
+          skill={boss.skill}
+          onClose={(mastered) => {
+            setBoss(null);
+            if (mastered) {
+              flash("🏆 Mastered! New quests unlocked");
+              router.refresh();
+            }
+          }}
+        />
+      )}
 
       <div className={"k-toast" + (toast ? " show" : "")}>{toast}</div>
     </div>

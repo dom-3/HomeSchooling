@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
   if (!body.skillId) {
     return NextResponse.json({ ok: false, error: "Missing skill" }, { status: 400 });
   }
-  const result = ["tried", "got_it", "mastered"].includes(body.result ?? "")
-    ? body.result
-    : "got_it";
+  // A child can log EFFORT ("tried"/"got_it") but can NEVER self-declare
+  // mastery — mastery is only ever minted by beating the Boss (verified).
+  const result = body.result === "tried" ? "tried" : "got_it";
 
   const admin = getAdminClient();
 
