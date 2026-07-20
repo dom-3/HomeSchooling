@@ -2,16 +2,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { KidHome, ShopItem } from "@/lib/kids/data";
+import { Icon, type IconName } from "@/components/kids/icons";
 
 function theme(name: string) {
   const r = name.toLowerCase().includes("rupert");
   return { accent: r ? "#e10600" : "#16a34a", accent2: r ? "#a10400" : "#0e7a37", ava: r ? "🏎️" : "🧗" };
 }
-const SUBJECT_ICON: Record<string, string> = {
-  Maths: "🔢", Reading: "📖", Writing: "✏️", Welsh: "🐉",
-  "Science & Engineering": "🔬", "Creation & Expressive Arts": "🎨",
-  "Health, PE & Wellbeing": "⚡", "Life & Enterprise": "💰",
+const SUBJECT_ICON_NAME: Record<string, IconName> = {
+  Maths: "maths", Reading: "reading", Writing: "writing", Welsh: "welsh",
+  "Science & Engineering": "science", "Creation & Expressive Arts": "arts",
+  "Health, PE & Wellbeing": "health", "Life & Enterprise": "money",
 };
+const subIcon = (subject: string | null): IconName => SUBJECT_ICON_NAME[subject ?? ""] ?? "star";
+
 const SUBJECT_SHORT: Record<string, string> = {
   Maths: "Maths", Reading: "Read", Writing: "Write", Welsh: "Cymraeg",
   "Science & Engineering": "Science", "Creation & Expressive Arts": "Create",
@@ -337,7 +340,7 @@ export function KidGame({ home }: { home: KidHome }) {
                       onClick={() => openQuest(i)}
                     >
                       {isCur && <span className="k-ring" />}
-                      <span>{isDone ? "✓" : SUBJECT_ICON[n.q.subject ?? ""] ?? "⭐"}</span>
+                      <span>{isDone ? <Icon name="check" size={26} /> : <Icon name={subIcon(n.q.subject)} size={26} />}</span>
                       <span className="k-cap">{SUBJECT_SHORT[n.q.subject ?? ""] ?? n.q.subject ?? ""}</span>
                     </button>
                   );
@@ -516,7 +519,7 @@ export function KidGame({ home }: { home: KidHome }) {
           <div className="k-sheet up">
             <div className="k-sheetcard">
               <div className="k-qtop">
-                <div className="k-ic">{SUBJECT_ICON[q.subject ?? ""] ?? "⭐"}</div>
+                <div className="k-ic"><Icon name={subIcon(q.subject)} size={24} /></div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="k-t">{q.skill ?? "Learning quest"}</div>
                   <div className="k-sub">

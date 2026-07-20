@@ -1,7 +1,9 @@
 /** Shared CSS for the kids' portal (injected once in the kids layout). */
 export const KIDS_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
 .kids-root{--accent:#e10600;--accent2:#a10400;min-height:100vh;background:#eef1f5;
-  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a1a1a}
+  font-family:'Fredoka','Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a1a1a;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.kids-root svg{display:block}
 .kids-shell{max-width:540px;margin:0 auto;padding:16px 14px 90px;position:relative}
 .k-hero{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid #eee;border-radius:16px;padding:11px 13px}
 .k-ava{width:50px;height:50px;flex:none;border-radius:14px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:27px;box-shadow:0 4px 0 var(--accent2)}
