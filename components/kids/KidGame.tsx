@@ -1,13 +1,21 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { KidHome, ShopItem } from "@/lib/kids/data";
 import { Icon, type IconName } from "@/components/kids/icons";
 import { BossFight } from "@/components/kids/BossFight";
+import { celebrate, sfx, haptic, useCountUp, useMute } from "@/components/kids/juice";
 
 function theme(name: string) {
   const r = name.toLowerCase().includes("rupert");
-  return { accent: r ? "#e10600" : "#16a34a", accent2: r ? "#a10400" : "#0e7a37", ava: r ? "🏎️" : "🧗" };
+  return {
+    world: (r ? "rupert" : "albie") as "rupert" | "albie",
+    accent: r ? "#e10600" : "#22c55e",   // Rupert racing red · Albie brighter tropical green
+    accent2: r ? "#a10400" : "#12924a",  // deep shadow tone for the "toy button" drop-shadow
+    warm: r ? "#ffb020" : "#ff8c42",     // amber sparks · coral pop
+    cool: r ? "#28c8ff" : "#0fa3a3",     // telemetry cyan · lagoon teal
+    ava: r ? "🏎️" : "🧗",
+  };
 }
 const SUBJECT_ICON_NAME: Record<string, IconName> = {
   Maths: "maths", Reading: "reading", Writing: "writing", Welsh: "welsh",
@@ -47,25 +55,6 @@ const TIERS: { key: string; label: string }[] = [
   { key: "experience", label: "🏆 Big adventures" },
 ];
 
-function confetti(n = 22) {
-  const cols = ["#e10600", "#16a34a", "#f59e0b", "#a855f7", "#3b82f6", "#ec4899", "#facc15"];
-  const x = window.innerWidth / 2, y = window.innerHeight * 0.22;
-  for (let i = 0; i < n; i++) {
-    const d = document.createElement("div");
-    d.className = "k-cf";
-    d.style.background = cols[i % cols.length];
-    d.style.left = x + "px";
-    d.style.top = y + "px";
-    const ang = Math.random() * 6.28, dist = 60 + Math.random() * 130;
-    d.style.transition = "transform 1s ease-out, opacity 1s";
-    document.body.appendChild(d);
-    requestAnimationFrame(() => {
-      d.style.transform = `translate(${Math.cos(ang) * dist}px,${Math.sin(ang) * dist + 150}px) rotate(${Math.random() * 720}deg)`;
-      d.style.opacity = "0";
-    });
-    setTimeout(() => d.remove(), 1050);
-  }
-}
 
 export function KidGame({ home }: { home: KidHome }) {
   const router = useRouter();
@@ -92,6 +81,9 @@ export function KidGame({ home }: { home: KidHome }) {
   const [coachInput, setCoachInput] = useState("");
   const [coachBusy, setCoachBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  const [muted, toggleMute] = useMute();
+  const comboRef = useRef(0);        // rising-pitch streak for the "correct" tick
+  const prevLevel = useRef<number>(0);
 
   // Remember each boy's chosen voice on his device.
   const voiceKey = `hshq_voice_${home.learner?.id ?? "x"}`;
@@ -205,9 +197,8 @@ export function KidGame({ home }: { home: KidHome }) {
   const nodes = home.plan.map((q, i) => ({ q, x: MAP_X[i % MAP_X.length], y: 40 + i * MAP_STEP }));
   const curIdx = home.plan.findIndex((q) => q.skill_id && !done.has(q.skill_id));
 
-  function flash(msg: string, party = true) {
+  function flash(msg: string, _party = true) {
     setToast(msg);
-    if (party) confetti();
     setTimeout(() => setToast(null), 1900);
   }
 
@@ -223,13 +214,22 @@ export function KidGame({ home }: { home: KidHome }) {
   async function smash(skillId: string) {
     if (busy || done.has(skillId)) return;
     setBusy(true);
+    // Optimistic: flip the node + celebrate instantly, reconcile with the server after.
+    setDone((s) => new Set(s).add(skillId));
+    sfx.tick(comboRef.current++);
+    celebrate("quest", t.world);
+    haptic("tap");
     const r = await post("/api/kids/log", { skillId, result: "got_it" });
     if (r && r.ok !== false) {
-      setDone((s) => new Set(s).add(skillId));
       const coinsAwd = r.coins_awarded ?? 0;
+      sfx.coin();
       flash(`+${r.xp_awarded ?? 0} XP  ·  +${coinsAwd} 🪙`);
       router.refresh();
     } else {
+      // reconcile: undo the optimistic tick + streak
+      setDone((s) => { const n = new Set(s); n.delete(skillId); return n; });
+      comboRef.current = 0;
+      sfx.error();
       flash(r?.error || "Try again", false);
     }
     setBusy(false);
@@ -241,6 +241,9 @@ export function KidGame({ home }: { home: KidHome }) {
     const r = await post("/api/kids/chest");
     if (r?.ok) {
       setChestUsed(true);
+      celebrate("chest", t.world);
+      sfx.chest();
+      haptic("unlock");
       flash(`Daily chest!  +${r.coins} 🪙`);
       router.refresh();
     } else if (r?.reason === "already_opened_today") {
@@ -257,6 +260,9 @@ export function KidGame({ home }: { home: KidHome }) {
     setBusy(true);
     const r = await post("/api/kids/habit", { habitId });
     if (r?.ok && !r.already) {
+      celebrate("quest", t.world);
+      sfx.coin();
+      haptic("tap");
       flash(`+${r.coins ?? 0} 🪙 · nice one!`);
       router.refresh();
     } else if (r?.already) {
@@ -272,9 +278,13 @@ export function KidGame({ home }: { home: KidHome }) {
     setBusy(true);
     const r = await post("/api/kids/buy-cosmetic", { itemKey });
     if (r?.ok) {
+      celebrate("quest", t.world);
+      sfx.coin();
+      haptic("unlock");
       flash("Nice upgrade! 🛠️");
       router.refresh();
     } else {
+      sfx.error();
       flash(
         r?.reason === "insufficient" ? "Keep earning! 💪" : r?.reason === "already_owned" ? "Already yours ✓" : "Try again",
         false
@@ -288,19 +298,41 @@ export function KidGame({ home }: { home: KidHome }) {
     setBusy(true);
     const r = await post("/api/kids/request-reward", { rewardId: item.reward_id });
     if (r?.ok) {
+      celebrate("chest", t.world);
+      sfx.chest();
+      haptic("unlock");
       if (r.status === "fulfilled") flash("Enjoy! 🎉");
       else flash("Asked a grown-up! ✋");
       router.refresh();
     } else {
+      sfx.error();
       flash(r?.reason === "saving" ? "Keep saving! 💪" : r?.error || "Try again", false);
     }
     setBusy(false);
   }
 
-  const rootStyle = { ["--accent" as any]: t.accent, ["--accent2" as any]: t.accent2 };
+  const coinsUp = useCountUp(coins);
+  const xpUp = useCountUp(totalXp);
+  useEffect(() => {
+    // Fire the big celebration when the level number actually increases.
+    if (prevLevel.current && levelNo > prevLevel.current) {
+      celebrate("levelUp", t.world);
+      sfx.levelUp();
+      haptic("win");
+    }
+    prevLevel.current = levelNo;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levelNo]);
+
+  const rootStyle = {
+    ["--accent" as any]: t.accent,
+    ["--accent2" as any]: t.accent2,
+    ["--warm" as any]: t.warm,
+    ["--cool" as any]: t.cool,
+  };
 
   return (
-    <div style={rootStyle}>
+    <div style={rootStyle} data-world={t.world}>
       {/* HERO */}
       <div className="k-hero">
         <div className="k-ava">{t.ava}</div>
@@ -309,13 +341,16 @@ export function KidGame({ home }: { home: KidHome }) {
           <div className="k-chip">Lv {levelNo} · {levelName}</div>
           <div className="k-xpbar">
             <div className="k-xpfill" style={{ width: lvPct + "%" }} />
-            <span className="k-xptxt">{totalXp} XP</span>
+            <span className="k-xptxt">{xpUp.value} XP</span>
           </div>
         </div>
         <div className="k-mini">
-          <div>{coins} 🪙</div>
+          <div><span className={"k-bump" + (coinsUp.pop ? " pop" : "")}>{coinsUp.value}</span> 🪙</div>
           <div>{pulse?.daily_streak ?? 0} 🔥</div>
         </div>
+        <button className="k-mute" title={muted ? "Sound off" : "Sound on"} aria-pressed={muted} onClick={toggleMute}>
+          {muted ? "🔇" : "🔊"}
+        </button>
         <button className="k-out" title="Sign out" onClick={async () => { await post("/api/kids/logout"); router.replace("/kids"); router.refresh(); }}>
           ⏻
         </button>
@@ -417,7 +452,7 @@ export function KidGame({ home }: { home: KidHome }) {
         <div>
           <div className="k-wallet">
             <div className="k-wlab">🪙 Your coins</div>
-            <div className="k-wbal">{coins}</div>
+            <div className={"k-wbal" + (coinsUp.pop ? " pop" : "")}>{coinsUp.value}</div>
           </div>
           {TIERS.map((tier) => {
             const items = home.shop.filter((s) => s.tier === tier.key);
@@ -464,7 +499,7 @@ export function KidGame({ home }: { home: KidHome }) {
         <div>
           <div className="k-wallet">
             <div className="k-wlab">🪙 Coins to spend</div>
-            <div className="k-wbal">{coins}</div>
+            <div className={"k-wbal" + (coinsUp.pop ? " pop" : "")}>{coinsUp.value}</div>
           </div>
           <div className="k-th">{boyKey === "rupert" ? "🏠 Kit out your garage" : "🏝️ Build up your island"}</div>
           <div className="k-scene">
@@ -678,6 +713,7 @@ export function KidGame({ home }: { home: KidHome }) {
         <BossFight
           skillId={boss.skillId}
           skill={boss.skill}
+          world={boyKey}
           onClose={(mastered) => {
             setBoss(null);
             if (mastered) {

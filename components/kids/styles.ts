@@ -166,5 +166,19 @@ export const KIDS_CSS = `
 .k-habbtn{flex:none;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12px;padding:8px 13px;border-radius:10px;cursor:pointer;box-shadow:0 3px 0 var(--accent2)}
 .k-habbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--accent2)}
 .k-habtick{flex:none;color:#22c55e;font-weight:900;font-size:16px;width:34px;text-align:center}
-.k-daychip{display:inline-block;font-size:12px;font-weight:800;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:6px 12px;border-radius:11px;margin-top:12px}
+.k-daychip{display:inline-block;font-size:12px;font-weight:800;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:6px 12px;border-radius:11px;margin-top:12px}/* ── T1 juice layer (feel only) ───────────────────────────── */
+.k-mute{flex:none;border:2px solid #eee;background:#fff;border-radius:10px;width:34px;height:34px;font-size:15px;cursor:pointer;line-height:1}
+.k-bump{display:inline-block;transition:transform .2s cubic-bezier(.34,1.56,.5,1)}
+.k-bump.pop{transform:scale(1.32)}
+.k-wbal{transition:transform .2s cubic-bezier(.34,1.56,.5,1)}
+.k-wbal.pop{transform:scale(1.14)}
+/* held celebration flash (single body class, GPU compositor only) */
+body.k-celebrate::after{content:"";position:fixed;inset:0;z-index:54;pointer-events:none;
+  background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%);animation:kflash .55s ease-out}
+@keyframes kflash{0%{opacity:0}14%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){
+  .k-bump.pop,.k-wbal.pop{transform:none}
+  body.k-celebrate::after{animation:none;opacity:0}
+}
+
 `;
