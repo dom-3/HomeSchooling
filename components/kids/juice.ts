@@ -22,6 +22,15 @@ const PALETTE: Record<World, string[]> = {
   albie: ["#22c55e", "#ff8c42", "#facc15", "#ffffff"],  // palm green / coral / gold
 };
 
+/* ---------- celebrate event bus (T2 overlays subscribe; no logic duplicated) ---------- */
+export type CelebrateEvent = { kind: CelebrateKind; world: World };
+const celebrateListeners = new Set<(e: CelebrateEvent) => void>();
+/** Subscribe to celebration events (returns an unsubscribe fn). */
+export function onCelebrate(fn: (e: CelebrateEvent) => void): () => void {
+  celebrateListeners.add(fn);
+  return () => { celebrateListeners.delete(fn); };
+}
+
 /* ---------- mute: module state + localStorage (sound ON by default) ---------- */
 let _muted = false;
 if (isBrowser) {
@@ -168,6 +177,7 @@ function flashScreen() {
  */
 export function celebrate(kind: CelebrateKind, world: World = "rupert") {
   if (!isBrowser || kind === "click") return;
+  celebrateListeners.forEach((fn) => fn({ kind, world }));
   const reduced = prefersReduced();
   if (kind === "quest") {
     burst(world, { particleCount: reduced ? 20 : 60, spread: 70, origin: { y: 0.35 }, startVelocity: 32, scalar: 0.9, ticks: 120 });

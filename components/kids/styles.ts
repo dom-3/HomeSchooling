@@ -186,5 +186,48 @@ body.k-celebrate::after{content:"";position:fixed;inset:0;z-index:54;pointer-eve
   .k-bump.pop,.k-wbal.pop{transform:none}
   body.k-celebrate::after{animation:none;opacity:0}
 }
+/* ── T2 arcade identity ──────────────────────────────────── */
+.k-mascot svg{width:100%;height:100%;display:block}
+.k-mascot.idle{animation:kbob 1.6s ease-in-out infinite}
+.k-mascot.cheer{animation:kcheer .6s ease-out}
+@keyframes kcheer{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-18%) scale(1.12)}60%{transform:translateY(0) scale(1)}80%{transform:translateY(-6%)}100%{transform:translateY(0)}}
+.k-ava .k-mascot{filter:drop-shadow(0 2px 0 var(--accent2))}
+/* world backdrop + parallax */
+.k-backdrop{position:absolute;inset:0;border-radius:14px;overflow:hidden;pointer-events:none;opacity:.92;--px:0px;--py:0px}
+.k-backdrop svg{position:absolute;inset:-6% -6%;width:112%;height:112%}
+.k-backdrop .k-far{transform:translate(calc(var(--px)*0.25),calc(var(--py)*0.25));transition:transform .18s ease-out}
+.k-backdrop .k-mid{transform:translate(calc(var(--px)*0.6),calc(var(--py)*0.6));transition:transform .16s ease-out}
+.k-backdrop .k-near{transform:translate(var(--px),var(--py));transition:transform .14s ease-out}
+.k-map>.k-road,.k-map>.k-node,.k-map>.k-heroav,.k-map>.k-cap{position:relative;z-index:2}
+.k-map>.k-road{position:absolute;z-index:2}
+/* daily chest (motion) */
+.k-chest2{width:100%;margin-top:12px;border:none;border-radius:16px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--warm) 22%,#fff),#fff);border:2px solid color-mix(in srgb,var(--warm) 45%,transparent);
+  box-shadow:0 4px 0 color-mix(in srgb,var(--warm) 55%,#00000022)}
+.k-chest2:active{transform:translateY(2px);box-shadow:0 2px 0 color-mix(in srgb,var(--warm) 55%,#00000022)}
+.k-chest2[disabled]{opacity:.7;cursor:default}
+.k-chestart{width:52px;height:52px;flex:none}
+.k-chestart svg{width:100%;height:100%}
+.k-chestlbl{font-size:15px;font-weight:800;color:#5a3410}
+/* celebration burst overlay (over T1 confetti) */
+.k-celoverlay{position:fixed;inset:0;z-index:58;display:flex;align-items:center;justify-content:center;pointer-events:none}
+/* attract / loading screen */
+.k-attract{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;
+  background:#0c0f14;animation:kfadein .4s ease-out}
+.k-attract.leave{animation:kfadeout .42s ease-in forwards}
+@keyframes kfadein{from{opacity:0}to{opacity:1}}
+@keyframes kfadeout{from{opacity:1}to{opacity:0;transform:scale(1.04)}}
+.k-attract-bg{position:absolute;inset:0}
+.k-attract-bg .k-backdrop{position:absolute;inset:0;border-radius:0;opacity:1}
+.k-attract-inner{position:relative;text-align:center;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.5);animation:kpop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes kpop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.k-attract-title{font-size:34px;font-weight:900;letter-spacing:.06em;margin-top:8px}
+.k-attract-sub{font-size:15px;font-weight:700;opacity:.9;margin-top:2px}
+.k-attract-press{margin-top:22px;font-size:14px;font-weight:800;opacity:.85;animation:kpress 1s ease-in-out infinite}
+@keyframes kpress{0%,100%{opacity:.5}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  .k-mascot.idle,.k-mascot.cheer,.k-attract,.k-attract.leave,.k-attract-inner,.k-attract-press{animation:none}
+  .k-backdrop .k-far,.k-backdrop .k-mid,.k-backdrop .k-near{transition:none;transform:none}
+}
 
 `;
