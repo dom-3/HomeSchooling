@@ -5,6 +5,11 @@ import type { KidHome, ShopItem } from "@/lib/kids/data";
 import { Icon, type IconName } from "@/components/kids/icons";
 import { BossFight } from "@/components/kids/BossFight";
 import { celebrate, sfx, haptic, useCountUp, useMute } from "@/components/kids/juice";
+import { Attract } from "@/components/kids/Attract";
+import { Backdrop } from "@/components/kids/Backdrop";
+import { Mascot } from "@/components/kids/Mascot";
+import { Chest } from "@/components/kids/Chest";
+import { CelebrationOverlay } from "@/components/kids/CelebrationOverlay";
 
 function theme(name: string) {
   const r = name.toLowerCase().includes("rupert");
@@ -333,9 +338,11 @@ export function KidGame({ home }: { home: KidHome }) {
 
   return (
     <div style={rootStyle} data-world={t.world}>
+      <Attract world={t.world} name={name} />
+      <CelebrationOverlay />
       {/* HERO */}
       <div className="k-hero">
-        <div className="k-ava">{t.ava}</div>
+        <div className="k-ava"><Mascot world={t.world} size={40} /></div>
         <div className="k-who">
           <div className="k-nm">{name.split(" ")[0]}</div>
           <div className="k-chip">Lv {levelNo} · {levelName}</div>
@@ -359,9 +366,7 @@ export function KidGame({ home }: { home: KidHome }) {
       {dayLabel && <div className="k-daychip">📅 Today — {dayLabel}</div>}
 
       {/* DAILY CHEST */}
-      <button className="k-chest" onClick={openChest} disabled={chestUsed || busy}>
-        🎁 {chestUsed ? "Chest opened today" : "Open your daily chest"}
-      </button>
+      <Chest world={t.world} used={chestUsed} disabled={busy} onOpen={openChest} />
 
       {/* DAILY HABITS */}
       {home.habits.filter((h) => h.scope === "shared" || h.scope === boyKey).length > 0 && (
@@ -409,6 +414,7 @@ export function KidGame({ home }: { home: KidHome }) {
           ) : (
             <div className="k-mapwrap">
               <div className="k-map" style={{ height: mapH }}>
+                <Backdrop world={t.world} />
                 <svg className="k-road" viewBox={`0 0 100 ${mapH}`} preserveAspectRatio="none">
                   <polyline
                     className="k-roadline"
@@ -438,7 +444,7 @@ export function KidGame({ home }: { home: KidHome }) {
                 })}
                 {curIdx >= 0 && nodes[curIdx] && (
                   <div className="k-heroav" style={{ left: nodes[curIdx].x + "%", top: nodes[curIdx].y + "px" }}>
-                    {t.ava}
+                    <Mascot world={t.world} size={34} pose="cheer" />
                   </div>
                 )}
               </div>
