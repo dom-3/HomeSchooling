@@ -229,5 +229,51 @@ body.k-celebrate::after{content:"";position:fixed;inset:0;z-index:54;pointer-eve
   .k-mascot.idle,.k-mascot.cheer,.k-attract,.k-attract.leave,.k-attract-inner,.k-attract-press{animation:none}
   .k-backdrop .k-far,.k-backdrop .k-mid,.k-backdrop .k-near{transition:none;transform:none}
 }
+/* ── Boss Fight — the real fight (P1a) ───────────────────────────────────
+   The boss is a character with an HP bar sized to the 90% pass threshold, so
+   HP hitting 0 == passing. All motion below is transform/opacity only (60fps
+   on M1, GPU compositor); every animation is killed by reduced-motion at the
+   end of this block. Original SVG art via BossSprite.tsx (drop-in for polish). */
+.k-bossstage{display:flex;flex-direction:column;align-items:center;gap:12px;margin:2px 0 18px}
+.k-bossarena{position:relative;width:100%;display:flex;align-items:flex-end;justify-content:center;height:184px}
+.k-bosssprite{filter:drop-shadow(0 8px 14px rgba(0,0,0,.4));transform:translateZ(0)}
+.k-bosssprite svg{width:100%;height:100%;display:block}
+.k-bosscombo{position:absolute;top:8px;left:50%;font-weight:900;font-size:26px;color:#fbbf24;
+  text-shadow:0 2px 8px rgba(0,0,0,.5);animation:kcombopop .5s cubic-bezier(.2,1.5,.4,1);pointer-events:none}
+.k-bosscombo.miss{color:#93a4bd;font-size:18px}
+@keyframes kcombopop{0%{transform:translate(-50%,6px) scale(.6);opacity:0}30%{transform:translate(-50%,-4px) scale(1.15);opacity:1}100%{transform:translate(-50%,-14px) scale(1);opacity:0}}
+/* HP bar */
+.k-bosshpwrap{width:100%;max-width:360px}
+.k-bosshplabel{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:#fff;opacity:.9;margin-bottom:5px;letter-spacing:.02em}
+.k-bosshp{position:relative;height:18px;background:rgba(255,255,255,.13);border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.35)}
+.k-bosshpf{height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:10px;transition:width .42s cubic-bezier(.3,.9,.3,1)}
+.k-bosshptick{position:absolute;top:0;width:2px;height:100%;background:rgba(15,18,32,.55);transform:translateX(-1px)}
+/* ── boss poses (BossSprite.tsx flips .k-bp-*) ─────────────────────────── */
+.k-bp-idle svg{animation:kbossbreath 2.6s ease-in-out infinite}
+@keyframes kbossbreath{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.015)}}
+.k-bp-roar svg{animation:kbossroar .7s cubic-bezier(.3,1.3,.4,1)}
+@keyframes kbossroar{0%{transform:scale(.5) translateY(24px);opacity:0}45%{transform:scale(1.16) translateY(-6px);opacity:1}70%{transform:scale(.97) translateY(0)}85%{transform:scale(1.05) rotate(-1.5deg)}100%{transform:scale(1) rotate(0)}}
+.k-bp-brace svg{animation:kbossbrace .26s ease-out}
+@keyframes kbossbrace{0%{transform:none}45%{transform:translateX(6px) rotate(2deg) scale(.98)}100%{transform:none}}
+.k-bp-hit svg{animation:kbosshit .4s ease-out}
+@keyframes kbosshit{0%{transform:none;opacity:1}18%{transform:translateX(-11px) rotate(-4deg) scale(.95);opacity:.55}40%{transform:translateX(7px) rotate(2deg);opacity:1}70%{transform:translateX(-3px)}100%{transform:none}}
+.k-bp-parry svg{animation:kbossparry .38s ease-out}
+@keyframes kbossparry{0%{transform:none}40%{transform:translateY(-5px) scale(1.02)}100%{transform:none}}
+.k-boss-shield{opacity:0}
+.k-bp-parry .k-boss-shield{animation:kbossshield .4s ease-out}
+@keyframes kbossshield{0%{opacity:0;transform:scale(.7)}35%{opacity:.9;transform:scale(1.04)}100%{opacity:0;transform:scale(1.15)}}
+.k-bp-defeat svg{animation:kbossdefeat .85s cubic-bezier(.5,0,.7,.5) forwards}
+@keyframes kbossdefeat{0%{transform:none;opacity:1}20%{transform:translateY(-6px) rotate(3deg)}100%{transform:translateY(60px) rotate(-24deg) scale(.82);opacity:0}}
+.k-bp-survive svg{animation:kbosssurvive .6s ease-out}
+@keyframes kbosssurvive{0%{transform:none}30%{transform:translateY(-6px) scale(1.06)}55%{transform:translateY(0) scale(.99)}100%{transform:none}}
+.k-boss-flare{animation:kbossflare 1.4s ease-in-out infinite}
+@keyframes kbossflare{0%,100%{opacity:.7;transform:translateX(0)}50%{opacity:1;transform:translateX(-2px)}}
+@media (prefers-reduced-motion: reduce){
+  .k-bp-idle svg,.k-bp-roar svg,.k-bp-brace svg,.k-bp-hit svg,.k-bp-parry svg,.k-bp-survive svg,
+  .k-boss-flare,.k-bp-parry .k-boss-shield{animation:none}
+  .k-bp-defeat svg{animation:none;opacity:0}
+  .k-bosscombo{animation:none;opacity:0}
+  .k-bosshpf{transition:none}
+}
 
 `;
