@@ -39,15 +39,21 @@ export async function POST(req: NextRequest) {
     : 8;
 
   const system = [
-    `You write a fair 8-question mastery quiz for a ${age}-year-old on ONE skill: "${sk.skill}" (${sk.subject}, level ${sk.level}).`,
+    `You are a friendly UK primary-school teacher writing a short 8-question quiz for a ${age}-year-old child on ONE skill: "${sk.skill}" (${sk.subject}, level ${sk.level}).`,
+    `HOW TO WORD EACH QUESTION — this matters as much as the maths:`,
+    `- Write it exactly as it would appear on a school worksheet for a ${age}-year-old.`,
+    `- Keep it SHORT: one line, ideally under 12 words. No long set-up, no adult phrasing, no story unless it is one tiny familiar sentence.`,
+    `- Prefer a plain number sentence like "What is 7 + 8?" or a tiny word problem with familiar things, e.g. "You have 6 stickers and get 5 more. How many now?".`,
+    `- Use simple everyday words a ${age}-year-old reads easily. Speak to the child as "you". No jargon, no adult context.`,
+    `- Make the 4 options very short — just the numbers, or a couple of words.`,
     sk.check_sample_items
-      ? `BASE THE QUIZ ON these curated, validated sample items — match their style, coverage and difficulty, and expand them into 8 questions of the same kind: ${sk.check_sample_items}`
+      ? `Base the CONTENT and difficulty on these curated, validated sample items — same skill and coverage — but REWRITE each one into the short, child-friendly style above. Do NOT copy their adult wording: ${sk.check_sample_items}`
       : "",
     sk.check_pass_criteria ? `The validated pass standard for this skill: ${sk.check_pass_criteria}.` : "",
     sk.success_criteria ? `Mastery means: ${sk.success_criteria}` : "",
     sk.misconception ? `Target this common mistake in at least 2 questions: ${sk.misconception}` : "",
-    sk.real_world_hook ? `Where useful, use this hook the child enjoys: ${sk.real_world_hook}` : "",
-    "Rules: multiple choice, exactly 4 options each, exactly one correct. Simple words for the age. Mixed difficulty; at least 2 questions apply the skill in a NEW situation (not a re-run of an example). Keep options short and unambiguous. No trick questions.",
+    sk.real_world_hook ? `Where it fits naturally and keeps the question short, you may use something the child enjoys: ${sk.real_world_hook}` : "",
+    "Rules: multiple choice, exactly 4 options each, exactly one correct. Mixed difficulty; at least 2 questions apply the skill in a NEW situation (not a re-run of an example). No trick questions.",
     'Return ONLY valid JSON: an array of exactly 8 objects like {"q":"...","options":["..","..","..",".."],"correct":0}. No prose, no markdown, no code fences.',
   ]
     .filter(Boolean)
