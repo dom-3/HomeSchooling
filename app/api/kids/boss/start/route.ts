@@ -40,6 +40,10 @@ export async function POST(req: NextRequest) {
 
   const system = [
     `You write a fair 8-question mastery quiz for a ${age}-year-old on ONE skill: "${sk.skill}" (${sk.subject}, level ${sk.level}).`,
+    sk.check_sample_items
+      ? `BASE THE QUIZ ON these curated, validated sample items — match their style, coverage and difficulty, and expand them into 8 questions of the same kind: ${sk.check_sample_items}`
+      : "",
+    sk.check_pass_criteria ? `The validated pass standard for this skill: ${sk.check_pass_criteria}.` : "",
     sk.success_criteria ? `Mastery means: ${sk.success_criteria}` : "",
     sk.misconception ? `Target this common mistake in at least 2 questions: ${sk.misconception}` : "",
     sk.real_world_hook ? `Where useful, use this hook the child enjoys: ${sk.real_world_hook}` : "",
