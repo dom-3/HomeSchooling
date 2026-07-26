@@ -166,4 +166,5 @@ export const KIDS_CSS = `
 .k-habbtn{flex:none;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12px;padding:8px 13px;border-radius:10px;cursor:pointer;box-shadow:0 3px 0 var(--accent2)}
 .k-habbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--accent2)}
 .k-habtick{flex:none;color:#22c55e;font-weight:900;font-size:16px;width:34px;text-align:center}
+.k-daychip{display:inline-block;font-size:12px;font-weight:800;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:6px 12px;border-radius:11px;margin-top:12px}
 `;

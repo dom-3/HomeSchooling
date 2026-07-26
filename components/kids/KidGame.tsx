@@ -72,6 +72,13 @@ export function KidGame({ home }: { home: KidHome }) {
   const name = home.learner?.name ?? "You";
   const t = theme(name);
   const boyKey = name.toLowerCase().includes("rupert") ? "rupert" : "albie";
+  const [dayLabel, setDayLabel] = useState("");
+  useEffect(() => {
+    const d = new Date();
+    const wd = d.toLocaleDateString("en-GB", { weekday: "long" });
+    const weekend = d.getDay() === 0 || d.getDay() === 6;
+    setDayLabel(weekend ? `${wd} · rest day 🎉` : wd);
+  }, []);
   const [tab, setTab] = useState<"quests" | "rewards" | "base" | "team">("quests");
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -313,6 +320,8 @@ export function KidGame({ home }: { home: KidHome }) {
           ⏻
         </button>
       </div>
+
+      {dayLabel && <div className="k-daychip">📅 Today — {dayLabel}</div>}
 
       {/* DAILY CHEST */}
       <button className="k-chest" onClick={openChest} disabled={chestUsed || busy}>
