@@ -39,9 +39,12 @@ export async function POST(req: NextRequest) {
   const items = ((attempt as any).items ?? []) as { q: string; options: string[]; correct: number }[];
   const answers = body.answers;
   const wrong: number[] = [];
+  const perItemCorrect: boolean[] = [];
   let score = 0;
   items.forEach((it, i) => {
-    if (answers[i] === it.correct) score += 1;
+    const isCorrect = answers[i] === it.correct;
+    perItemCorrect.push(isCorrect);
+    if (isCorrect) score += 1;
     else wrong.push(i);
   });
   const total = items.length;
@@ -75,5 +78,5 @@ export async function POST(req: NextRequest) {
     await admin.rpc("generate_tasks", { p_learner_id: learnerId, p_max: 8 });
   }
 
-  return NextResponse.json({ ok: true, passed, score, total, wrong, receipt });
+  return NextResponse.json({ ok: true, passed, score, total, wrong, perItemCorrect, receipt });
 }

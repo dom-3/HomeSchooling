@@ -13,5 +13,3 @@ build.log
 node_modules
 .next
 .env.local
-
-p1a-build.log
