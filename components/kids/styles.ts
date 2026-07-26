@@ -166,7 +166,13 @@ export const KIDS_CSS = `
 .k-habbtn{flex:none;border:none;background:var(--accent);color:#fff;font-weight:800;font-size:12px;padding:8px 13px;border-radius:10px;cursor:pointer;box-shadow:0 3px 0 var(--accent2)}
 .k-habbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--accent2)}
 .k-habtick{flex:none;color:#22c55e;font-weight:900;font-size:16px;width:34px;text-align:center}
-.k-daychip{display:inline-block;font-size:12px;font-weight:800;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:6px 12px;border-radius:11px;margin-top:12px}/* ── T1 juice layer (feel only) ───────────────────────────── */
+.k-daychip{display:inline-block;font-size:12px;font-weight:800;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:6px 12px;border-radius:11px;margin-top:12px}
+.k-wisdom{background:var(--surface,#fff);border:2px solid var(--border,#eee);border-radius:16px;padding:14px;margin-top:12px}
+.k-wtitle{font-size:12px;font-weight:900;opacity:.6;margin-bottom:8px}
+.k-wquote{font-size:14.5px;font-weight:700;line-height:1.42;font-style:italic}
+.k-wauthor{font-size:12px;font-weight:800;color:var(--accent);margin-top:6px}
+.k-wreveal{margin-top:11px;border:none;background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent);font-weight:800;font-size:12px;padding:8px 13px;border-radius:10px;cursor:pointer}
+.k-wmean{font-size:12.5px;font-weight:600;line-height:1.45;margin-top:11px;opacity:.85;padding-top:11px;border-top:1px solid var(--muted-bg,#f0f0f0)}/* ── T1 juice layer (feel only) ───────────────────────────── */
 .k-mute{flex:none;border:2px solid #eee;background:#fff;border-radius:10px;width:34px;height:34px;font-size:15px;cursor:pointer;line-height:1}
 .k-bump{display:inline-block;transition:transform .2s cubic-bezier(.34,1.56,.5,1)}
 .k-bump.pop{transform:scale(1.32)}

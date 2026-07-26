@@ -66,7 +66,7 @@ export function KidGame({ home }: { home: KidHome }) {
     const d = new Date();
     const wd = d.toLocaleDateString("en-GB", { weekday: "long" });
     const weekend = d.getDay() === 0 || d.getDay() === 6;
-    setDayLabel(weekend ? `${wd} · rest day 🎉` : wd);
+    setDayLabel(weekend ? `${wd} · your choice 🌟` : wd);
   }, []);
   const [tab, setTab] = useState<"quests" | "rewards" | "base" | "team">("quests");
   const [toast, setToast] = useState<string | null>(null);
@@ -77,6 +77,7 @@ export function KidGame({ home }: { home: KidHome }) {
   const [boss, setBoss] = useState<{ skillId: string; skill: string } | null>(null);
   const [voice, setVoice] = useState<string>(DEFAULT_VOICE);
   const [coachOpen, setCoachOpen] = useState(false);
+  const [wisdomOpen, setWisdomOpen] = useState(false);
   const [coachMsgs, setCoachMsgs] = useState<{ role: "child" | "coach"; text: string }[]>([]);
   const [coachInput, setCoachInput] = useState("");
   const [coachBusy, setCoachBusy] = useState(false);
@@ -390,6 +391,22 @@ export function KidGame({ home }: { home: KidHome }) {
                 )}
               </div>
             ))}
+        </div>
+      )}
+
+      {/* TODAY'S WISDOM */}
+      {home.inspiration && (
+        <div className="k-wisdom">
+          <div className="k-wtitle">🌟 Today&rsquo;s wisdom</div>
+          <div className="k-wquote">&ldquo;{home.inspiration.quote}&rdquo;</div>
+          <div className="k-wauthor">— {home.inspiration.author}</div>
+          {wisdomOpen ? (
+            <div className="k-wmean">{home.inspiration.meaning}</div>
+          ) : (
+            <button className="k-wreveal" onClick={() => { setWisdomOpen(true); sfx.click(); }}>
+              💡 What does it mean?
+            </button>
+          )}
         </div>
       )}
 
