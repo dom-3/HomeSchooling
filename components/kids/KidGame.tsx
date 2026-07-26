@@ -8,6 +8,7 @@ import { celebrate, sfx, haptic, useCountUp, useMute } from "@/components/kids/j
 import { Attract } from "@/components/kids/Attract";
 import { Backdrop } from "@/components/kids/Backdrop";
 import { Mascot } from "@/components/kids/Mascot";
+import { HomeBaseScene } from "@/components/kids/HomeBaseScene";
 import { Chest } from "@/components/kids/Chest";
 import { CelebrationOverlay } from "@/components/kids/CelebrationOverlay";
 
@@ -520,27 +521,65 @@ export function KidGame({ home }: { home: KidHome }) {
       {/* BASE */}
       {tab === "base" && (
         <div>
-          <div className="k-wallet">
-            <div className="k-wlab">🪙 Coins to spend</div>
-            <div className={"k-wbal" + (coinsUp.pop ? " pop" : "")}>{coinsUp.value}</div>
+          {/* HERO — the interactive Home Base scene, growing with every reward */}
+          <div className="k-basewrap">
+            <div className="k-baseribbon">{boyKey === "rupert" ? "🏁 Home Base" : "🏝️ Home Base"}</div>
+            <div className="k-basestage">
+              <HomeBaseScene world={boyKey} owned={home.owned} />
+              <span className="k-basehero"><Mascot world={t.world} pose="cheer" size={64} /></span>
+            </div>
           </div>
-          <div className="k-th">{boyKey === "rupert" ? "🏠 Kit out your garage" : "🏝️ Build up your island"}</div>
-          <div className="k-scene">
+
+          {/* HUD strip — level · XP · coins · streak */}
+          <div className="k-basehud">
+            <span className="k-baselv">Lv {levelNo} · {levelName}</span>
+            <span className="k-basexp">
+              <i style={{ width: lvPct + "%" }} />
+              <span>{xpUp.value} XP</span>
+            </span>
+            <span className="k-basestat">
+              <span className={"k-bump" + (coinsUp.pop ? " pop" : "")}>{coinsUp.value}</span> 🪙
+            </span>
+            <span className="k-basestat">{pulse?.daily_streak ?? 0} 🔥</span>
+          </div>
+
+          <p className="k-baseline">
+            {boyKey === "rupert"
+              ? "Every skill you master upgrades your car."
+              : "Every skill you master builds up your island."}
+          </p>
+
+          <div className="k-th">{boyKey === "rupert" ? "🔧 Locker" : "🎒 Locker"}</div>
+          <div className="k-locker">
             {home.cosmetics
               .filter((c) => c.category === "base" && (c.scope === boyKey || c.scope === "shared"))
               .map((c) => {
                 const isOwned = home.owned.includes(c.item_key);
                 const can = coins >= c.cost_coins;
+                const pct = Math.min(100, Math.round((coins / c.cost_coins) * 100));
+                const toGo = Math.max(0, c.cost_coins - coins);
                 return (
-                  <div className={"k-slot" + (isOwned ? " have" : "")} key={c.item_key}>
-                    <div className="si">{isOwned ? c.icon ?? "✨" : "🔒"}</div>
-                    <div className="sl">{c.label}</div>
+                  <div className={"k-lock" + (isOwned ? " have" : "")} key={c.item_key}>
+                    <div className="k-lockic">{c.icon ?? "✨"}</div>
+                    <div className="k-lockl">{c.label}</div>
                     {isOwned ? (
-                      <span className="sb owned">Owned ✓</span>
+                      <span className="k-lockb owned">Placed ✓</span>
                     ) : (
-                      <button className={"sb" + (can ? "" : " cant")} disabled={busy || !can} onClick={() => can && buy(c.item_key)}>
-                        {c.cost_coins} 🪙
-                      </button>
+                      <>
+                        <button
+                          className={"k-lockb" + (can ? "" : " cant")}
+                          disabled={busy || !can}
+                          onClick={() => can && buy(c.item_key)}
+                        >
+                          {c.cost_coins} 🪙
+                        </button>
+                        {!can && (
+                          <>
+                            <div className="k-lockbar"><i style={{ width: pct + "%" }} /></div>
+                            <div className="k-locktogo">{toGo} to go</div>
+                          </>
+                        )}
+                      </>
                     )}
                   </div>
                 );

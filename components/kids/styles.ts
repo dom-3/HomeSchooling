@@ -275,5 +275,81 @@ body.k-celebrate::after{content:"";position:fixed;inset:0;z-index:54;pointer-eve
   .k-bosscombo{animation:none;opacity:0}
   .k-bosshpf{transition:none}
 }
+/* ── Home Base — the flagship lobby scene (HomeBaseScene.tsx) ──────────────
+   Hero card holds an original SVG environment; the Mascot stands beside it and
+   a HUD strip + Locker grid sit below. All motion is transform/opacity only and
+   killed under prefers-reduced-motion at the end of this block. */
+.k-basewrap{position:relative;border-radius:20px;overflow:hidden;border:2px solid var(--accent);
+  box-shadow:0 6px 0 var(--accent2),0 12px 26px rgba(0,0,0,.14);margin-bottom:12px;background:#12151a}
+.k-basestage{position:relative;line-height:0}
+.k-basescene{display:block}
+.k-basescene svg{width:100%;height:auto;display:block}
+/* mascot standing on the base, bottom-left */
+.k-basehero{position:absolute;left:10px;bottom:8px;width:64px;height:64px;z-index:3;
+  filter:drop-shadow(0 4px 3px rgba(0,0,0,.4))}
+/* "Home Base" ribbon */
+.k-baseribbon{position:absolute;top:10px;left:10px;z-index:3;font-size:11px;font-weight:900;letter-spacing:.05em;
+  text-transform:uppercase;color:#fff;background:color-mix(in srgb,var(--accent) 82%,#000);
+  padding:5px 11px;border-radius:11px;box-shadow:0 3px 0 var(--accent2)}
+/* HUD strip below the scene */
+.k-basehud{display:flex;align-items:center;gap:9px;background:#fff;border:2px solid #eee;border-top:none;
+  border-radius:0 0 18px 18px;padding:11px 12px;margin:-14px 6px 0;position:relative;z-index:2;flex-wrap:wrap}
+.k-basehud .k-baselv{flex:none;font-size:11px;font-weight:800;color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent);padding:4px 9px;border-radius:9px;white-space:nowrap}
+.k-basexp{flex:1;min-width:120px;position:relative;height:16px;background:#f0f0f0;border-radius:9px;overflow:hidden}
+.k-basexp>i{display:block;height:100%;background:var(--accent);border-radius:9px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.k-basexp>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;
+  font-style:normal;text-shadow:0 1px 2px rgba(255,255,255,.6)}
+.k-basestat{flex:none;font-size:13px;font-weight:800;white-space:nowrap}
+.k-baseline{font-size:12.5px;font-weight:700;opacity:.72;line-height:1.4;margin:10px 4px 2px;text-align:center}
+/* Locker grid */
+.k-locker{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.k-lock{position:relative;border-radius:14px;border:2px solid #eee;background:#fff;display:flex;flex-direction:column;
+  align-items:center;gap:5px;padding:11px 7px 9px;text-align:center;min-height:126px}
+.k-lock.have{border-color:#22c55e;background:color-mix(in srgb,#22c55e 8%,transparent)}
+.k-lockic{width:40px;height:40px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;background:var(--muted-bg,#f4f6fa)}
+.k-lock.have .k-lockic{background:color-mix(in srgb,#22c55e 16%,transparent)}
+.k-lockl{font-size:10px;font-weight:800;opacity:.8;line-height:1.18;flex:1;display:flex;align-items:center}
+.k-lockb{border:none;border-radius:10px;font-size:11px;font-weight:800;padding:6px 10px;cursor:pointer;width:100%;
+  background:var(--accent);color:#fff;box-shadow:0 2px 0 var(--accent2)}
+.k-lockb:active{transform:translateY(1px);box-shadow:none}
+.k-lockb.cant{background:#eef0f4;color:#9aa3af;box-shadow:none;cursor:default}
+.k-lockb.owned{background:#22c55e;box-shadow:none;cursor:default}
+.k-lockbar{width:100%;height:5px;background:#eef0f4;border-radius:3px;overflow:hidden;margin-top:2px}
+.k-lockbar>i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
+.k-locktogo{font-size:8.5px;font-weight:800;opacity:.55;margin-top:1px}
+/* scene idle motion */
+.k-hb-car{animation:khbbob 3.4s ease-in-out infinite;transform-origin:200px 240px}
+@keyframes khbbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.k-hb-wheel{animation:khbspin 6s linear infinite}
+@keyframes khbspin{to{transform:rotate(360deg)}}
+.k-hb-glow{animation:khbglow 2.2s ease-in-out infinite}
+@keyframes khbglow{0%,100%{opacity:.85}50%{opacity:1}}
+.k-hb-telemetry{stroke-dasharray:120;stroke-dashoffset:0;animation:khbtel 3s linear infinite}
+@keyframes khbtel{from{stroke-dashoffset:120}to{stroke-dashoffset:0}}
+.k-hb-sway{animation:khbsway 3.6s ease-in-out infinite}
+@keyframes khbsway{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}
+.k-hb-palm{animation:khbsway 4.6s ease-in-out infinite;transform-origin:268px 216px}
+.k-hb-sun{animation:khbsun 5s ease-in-out infinite}
+@keyframes khbsun{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+.k-hb-cloud{animation:khbcloud 9s ease-in-out infinite}
+@keyframes khbcloud{0%,100%{transform:translateX(0)}50%{transform:translateX(14px)}}
+.k-hb-waves{animation:khbwaves 4s ease-in-out infinite}
+@keyframes khbwaves{0%,100%{transform:translateX(0)}50%{transform:translateX(-8px)}}
+.k-hb-boat{animation:khbboat 3.8s ease-in-out infinite}
+@keyframes khbboat{0%,100%{transform:rotate(-2deg) translateY(0)}50%{transform:rotate(2deg) translateY(-3px)}}
+.k-hb-flame{animation:khbflame 1.1s ease-in-out infinite}
+@keyframes khbflame{0%,100%{transform:scaleY(1) scaleX(1)}50%{transform:scaleY(1.14) scaleX(.92)}}
+.k-hb-flower{animation:khbsway 3s ease-in-out infinite}
+.k-hb-pet{animation:khbbob 2.6s ease-in-out infinite;transform-origin:150px 244px}
+.k-hb-tail{animation:khbtail .5s ease-in-out infinite}
+@keyframes khbtail{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+.k-hb-pop{animation:khbpop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes khbpop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  .k-hb-car,.k-hb-wheel,.k-hb-glow,.k-hb-telemetry,.k-hb-sway,.k-hb-palm,.k-hb-sun,.k-hb-cloud,
+  .k-hb-waves,.k-hb-boat,.k-hb-flame,.k-hb-flower,.k-hb-pet,.k-hb-tail,.k-hb-pop{animation:none;opacity:1;transform:none}
+}
 
 `;
