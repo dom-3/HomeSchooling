@@ -667,7 +667,9 @@ export function KidGame({ home }: { home: KidHome }) {
       {(() => {
         const q = sel !== null ? home.plan[sel] : null;
         if (!q) return null;
-        const isDone = q.skill_id ? done.has(q.skill_id) : false;
+        // Boss is LOCKED until the lesson for this skill is done. `done` gives an
+        // instant unlock this session; home.lessonsDone survives a refresh.
+        const lessonDone = !!(q.skill_id && (home.lessonsDone.includes(q.skill_id) || done.has(q.skill_id)));
         return (
           <div className="k-sheet up">
             <div className="k-sheetcard">
@@ -688,11 +690,7 @@ export function KidGame({ home }: { home: KidHome }) {
                   🔊
                 </button>
               </div>
-              {isDone ? (
-                <button className="k-smash" style={{ background: "#22c55e", boxShadow: "0 4px 0 #15803d" }} disabled>
-                  Practised ✓
-                </button>
-              ) : (
+              {lessonDone ? (
                 <>
                   <button
                     className="k-bossbtn2"
@@ -704,10 +702,16 @@ export function KidGame({ home }: { home: KidHome }) {
                       if (sid) setBoss({ skillId: sid, skill: nm });
                     }}
                   >
-                    👑 Take the Boss
+                    👑 Face the Boss
                   </button>
+                  <button className="k-didbtn" disabled>
+                    Lesson done ✓
+                  </button>
+                </>
+              ) : (
+                <>
                   <button
-                    className="k-didbtn"
+                    className="k-smash"
                     disabled={busy || !q.skill_id}
                     onClick={() => {
                       const sid = q.skill_id;
@@ -715,6 +719,9 @@ export function KidGame({ home }: { home: KidHome }) {
                     }}
                   >
                     I just did the lesson (+coins)
+                  </button>
+                  <button className="k-bossbtn2 locked" disabled style={{ marginTop: 10 }}>
+                    👑 Boss — do the lesson first 🔒
                   </button>
                 </>
               )}

@@ -131,6 +131,9 @@ export const KIDS_CSS = `
 /* Boss Fight */
 .k-bossbtn2{width:100%;border:none;background:#111;color:#fff;font-size:16px;font-weight:900;padding:13px;border-radius:14px;cursor:pointer;box-shadow:0 4px 0 #000;letter-spacing:.02em}
 .k-bossbtn2:active{transform:translateY(2px);box-shadow:0 2px 0 #000}
+.k-bossbtn2[disabled]{cursor:default}
+.k-bossbtn2.locked{background:#e5e7eb;color:#9aa3af;box-shadow:0 4px 0 #cbd0d8}
+.k-didbtn[disabled]{color:#22c55e;opacity:.85;cursor:default}
 .k-didbtn{width:100%;border:none;background:transparent;color:var(--accent);font-weight:800;font-size:12.5px;padding:9px 0 0;cursor:pointer}
 .k-boss{position:fixed;inset:0;z-index:80;background:radial-gradient(circle at 50% 0%,#22263a,#0f1220 70%);color:#fff;display:flex;flex-direction:column;padding:20px 16px calc(20px + env(safe-area-inset-bottom));overflow-y:auto;font-family:'Fredoka','Inter',system-ui,sans-serif}
 .k-bosshead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -241,7 +244,23 @@ body.k-celebrate::after{content:"";position:fixed;inset:0;z-index:54;pointer-eve
 .k-bosscombo{position:absolute;top:8px;left:50%;font-weight:900;font-size:26px;color:#fbbf24;
   text-shadow:0 2px 8px rgba(0,0,0,.5);animation:kcombopop .5s cubic-bezier(.2,1.5,.4,1);pointer-events:none}
 .k-bosscombo.miss{color:#93a4bd;font-size:18px}
+.k-bosscombo.cannon{color:#fff;font-size:30px;text-shadow:0 0 14px var(--warm),0 2px 8px rgba(0,0,0,.6)}
 @keyframes kcombopop{0%{transform:translate(-50%,6px) scale(.6);opacity:0}30%{transform:translate(-50%,-4px) scale(1.15);opacity:1}100%{transform:translate(-50%,-14px) scale(1);opacity:0}}
+/* cannon COMBO flash — a bright ring behind the boss on every 3rd correct */
+.k-bosscannon{position:absolute;left:50%;top:52%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.9),var(--warm) 34%,rgba(255,255,255,0) 68%);animation:kbosscannon .6s ease-out}
+@keyframes kbosscannon{0%{transform:scale(.2);opacity:0}25%{opacity:.95}100%{transform:scale(1.5);opacity:0}}
+/* screen kick — added to .k-boss on a cannon */
+.k-boss.k-shake{animation:kbossshake .36s cubic-bezier(.36,.07,.19,.97)}
+@keyframes kbossshake{10%{transform:translate(-3px,2px)}30%{transform:translate(5px,-3px)}50%{transform:translate(-6px,1px)}70%{transform:translate(4px,3px)}90%{transform:translate(-2px,-1px)}100%{transform:none}}
+/* per-question meta row + combo streak chip + escape warning */
+.k-bossmeta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.k-bossstreak{font-size:13px;font-weight:900;color:#fbbf24;background:rgba(251,191,36,.14);padding:3px 10px;border-radius:11px;animation:kcombopop .4s ease-out}
+.k-bosswarn{font-size:13px;font-weight:800;color:#fecaca;background:rgba(239,68,68,.16);border:1px solid rgba(239,68,68,.4);padding:8px 12px;border-radius:12px;margin-bottom:14px;text-align:center;animation:kbosswarn .5s ease-out}
+@keyframes kbosswarn{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+.k-bossloot{display:flex;gap:14px;justify-content:center;margin-top:14px;font-size:16px;font-weight:900;color:#fbbf24}
+.k-opt[disabled]{opacity:.55;cursor:default}
+.k-opt[disabled]:hover{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.06)}
 /* HP bar */
 .k-bosshpwrap{width:100%;max-width:360px}
 .k-bosshplabel{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:#fff;opacity:.9;margin-bottom:5px;letter-spacing:.02em}
@@ -272,7 +291,9 @@ body.k-celebrate::after{content:"";position:fixed;inset:0;z-index:54;pointer-eve
   .k-bp-idle svg,.k-bp-roar svg,.k-bp-brace svg,.k-bp-hit svg,.k-bp-parry svg,.k-bp-survive svg,
   .k-boss-flare,.k-bp-parry .k-boss-shield{animation:none}
   .k-bp-defeat svg{animation:none;opacity:0}
-  .k-bosscombo{animation:none;opacity:0}
+  .k-bosscombo,.k-bossstreak,.k-bosswarn{animation:none}
+  .k-boss.k-shake,.k-bosscannon{animation:none}
+  .k-bosscannon{opacity:0}
   .k-bosshpf{transition:none}
 }
 /* ── Home Base — the flagship lobby scene (HomeBaseScene.tsx) ──────────────

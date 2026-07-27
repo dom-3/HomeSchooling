@@ -34,12 +34,25 @@ export async function POST(req: NextRequest) {
   ]);
   const sk = skillRes.data as any;
   if (!sk) return NextResponse.json({ ok: false, error: "I can't find that quest." }, { status: 400 });
+
+  // GATE: the Boss is EARNED — you must do this skill's lesson (a practice) first.
+  // Defence-in-depth; the UI also locks the button until lessonsDone includes it.
+  const { data: practice } = await admin
+    .from("activity_events")
+    .select("id")
+    .eq("learner_id", learnerId)
+    .eq("skill_id", body.skillId)
+    .in("result", ["tried", "got_it"])
+    .limit(1);
+  if (!practice || practice.length === 0) {
+    return NextResponse.json({ ok: false, locked: true, error: "Do the lesson first — then face the boss!" }, { status: 200 });
+  }
   const age = (learnerRes.data as any)?.dob
     ? Math.floor((Date.now() - new Date((learnerRes.data as any).dob).getTime()) / 31557600000)
     : 8;
 
   const system = [
-    `You are a friendly UK primary-school teacher writing a short 8-question quiz for a ${age}-year-old child on ONE skill: "${sk.skill}" (${sk.subject}, level ${sk.level}).`,
+    `You are a friendly UK primary-school teacher writing a short 10-question quiz for a ${age}-year-old child on ONE skill: "${sk.skill}" (${sk.subject}, level ${sk.level}).`,
     `HOW TO WORD EACH QUESTION — this matters as much as the maths:`,
     `- Write it exactly as it would appear on a school worksheet for a ${age}-year-old.`,
     `- Keep it SHORT: one line, ideally under 12 words. No long set-up, no adult phrasing, no story unless it is one tiny familiar sentence.`,
@@ -54,7 +67,7 @@ export async function POST(req: NextRequest) {
     sk.misconception ? `Target this common mistake in at least 2 questions: ${sk.misconception}` : "",
     sk.real_world_hook ? `Where it fits naturally and keeps the question short, you may use something the child enjoys: ${sk.real_world_hook}` : "",
     "Rules: multiple choice, exactly 4 options each, exactly one correct. Mixed difficulty; at least 2 questions apply the skill in a NEW situation (not a re-run of an example). No trick questions.",
-    'Return ONLY valid JSON: an array of exactly 8 objects like {"q":"...","options":["..","..","..",".."],"correct":0}. No prose, no markdown, no code fences.',
+    'Return ONLY valid JSON: an array of exactly 10 objects like {"q":"...","options":["..","..","..",".."],"correct":0}. No prose, no markdown, no code fences.',
   ]
     .filter(Boolean)
     .join("\n");
@@ -66,9 +79,9 @@ export async function POST(req: NextRequest) {
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1500,
+        max_tokens: 2200,
         system,
-        messages: [{ role: "user", content: `Write the 8 questions for "${sk.skill}".` }],
+        messages: [{ role: "user", content: `Write the 10 questions for "${sk.skill}".` }],
       }),
     });
     if (!r.ok) return NextResponse.json({ ok: false, error: "The boss is warming up — try again." }, { status: 502 });
@@ -85,7 +98,7 @@ export async function POST(req: NextRequest) {
           it && typeof it.q === "string" && Array.isArray(it.options) && it.options.length === 4 &&
           Number.isInteger(it.correct) && it.correct >= 0 && it.correct <= 3
       )
-      .slice(0, 8)
+      .slice(0, 10)
       .map((it: any) => ({ q: String(it.q), options: it.options.map(String), correct: it.correct }));
   } catch {
     return NextResponse.json({ ok: false, error: "The boss got confused — try again." }, { status: 502 });

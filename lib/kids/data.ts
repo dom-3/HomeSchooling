@@ -106,6 +106,8 @@ export interface KidHome {
   bondQuests: BondQuest[];
   habits: HabitItem[];
   inspiration: { quote: string; author: string; meaning: string; theme: string | null } | null;
+  /** skill_ids the child has already practised (result tried/got_it) — the Boss unlocks per skill only after its lesson is done. */
+  lessonsDone: string[];
 }
 
 /** For the boy-picker on the PIN gate. */
@@ -121,7 +123,7 @@ export async function getLearnersForPicker(): Promise<KidLearner[]> {
 /** Everything one boy's home screen needs, in one round of reads. */
 export async function getKidHome(learnerId: string): Promise<KidHome> {
   const a = getAdminClient();
-  const [learner, pulse, wallet, plan, shop, team, levels, cosmetics, owned, bonds, habits, insp] = await Promise.all([
+  const [learner, pulse, wallet, plan, shop, team, levels, cosmetics, owned, bonds, habits, insp, lessons] = await Promise.all([
     a.from("learners").select("id, name, interests, photo_url").eq("id", learnerId).maybeSingle(),
     a.from("v_motivation_pulse").select("*").eq("learner_id", learnerId).maybeSingle(),
     a.from("v_coin_wallet").select("balance, net_today").eq("learner_id", learnerId).maybeSingle(),
@@ -134,6 +136,7 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     a.from("bond_quests").select("quest_key, label, icon, team_points, is_teach").eq("active", true).order("sort", { ascending: true }),
     a.from("v_today_habits").select("*").eq("learner_id", learnerId).order("sort", { ascending: true }),
     a.from("v_daily_inspiration").select("*").maybeSingle(),
+    a.from("activity_events").select("skill_id").eq("learner_id", learnerId).in("result", ["tried", "got_it"]),
   ]);
   return {
     learner: (learner.data ?? null) as KidLearner | null,
@@ -148,5 +151,8 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     bondQuests: (bonds.data ?? []) as BondQuest[],
     habits: (habits.data ?? []) as HabitItem[],
     inspiration: (insp.data ?? null) as KidHome["inspiration"],
+    lessonsDone: Array.from(
+      new Set(((lessons.data ?? []) as { skill_id: string | null }[]).map((r) => r.skill_id).filter(Boolean) as string[])
+    ),
   };
 }

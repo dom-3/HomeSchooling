@@ -5,19 +5,42 @@ import { BossSprite, BOSS_NAME, type BossPose } from "@/components/kids/BossSpri
 
 type Item = { q: string; options: string[] };
 
+/** Loose view of the server's log_activity receipt (win-screen numbers only). */
+type Receipt = { xp_awarded?: number; coins_awarded?: number } | null;
+
+/** The one true shape returned by POST /api/kids/boss/answer. */
+type AnswerResp = {
+  ok: boolean;
+  index: number;
+  correct: boolean;
+  cannon: boolean;
+  correctCount: number;
+  wrongTotal: number;
+  wrongStreak: number;
+  correctStreak: number;
+  hp: number;
+  hpRemaining: number;
+  answered: number;
+  total: number;
+  outcome: "ongoing" | "won" | "escaped";
+  terminal: boolean;
+  receipt?: Receipt;
+  error?: string;
+};
+
 /**
- * Boss Fight — now a real fight (P1a).
+ * Boss Fight v2 — a LIVE, turn-by-turn battle.
  *
- * The engine is untouched: we still start → collect answers → submit, the answer
- * key never reaches the client mid-quiz, and the 90% pass gate lives server-side.
- * On top of that flow we add pure FEEL: a boss character with an HP bar sized so
- * HP hits 0 exactly at the pass threshold, a summon beat, a per-answer "strike
- * wind-up" (no correctness shown), and — after submit — a STRIKE REPLAY that
- * plays the server's per-item results back as a combo that drains the bar.
+ * The engine is untouched and the answer key never reaches the client. We POST
+ * ONE answer at a time to /api/kids/boss/answer and drive EVERY visual from the
+ * server's reply: a correct pick lands a hit (boss flinches, HP drops, rising
+ * tick, combo count), a 3-in-a-row fires a CANNON (screen shake + flash + big
+ * sound), a wrong pick is parried (gentle, no HP change, an earned "watch out!"
+ * on the 2nd miss). The boss dies exactly when hpRemaining hits 0 → BOSS BEATEN;
+ * if it escapes, the child loses nothing and can jump straight back in.
  *
- * perItemCorrect: the submit response's new boolean[] (added by the architect).
- * We degrade gracefully if it isn't present yet by reconstructing from `wrong[]`
- * (already returned today), so this ships and tests before that one line lands.
+ * All motion is gated by prefers-reduced-motion: outcomes are identical, we just
+ * snap instead of animating and skip the shake/flash.
  */
 export function BossFight({
   skillId,
@@ -30,25 +53,30 @@ export function BossFight({
   world?: World;
   onClose: (mastered: boolean) => void;
 }) {
-  const [phase, setPhase] = useState<"loading" | "quiz" | "marking" | "replay" | "result" | "error">("loading");
+  const [phase, setPhase] = useState<
+    "loading" | "gate" | "fight" | "won" | "escaped" | "error"
+  >("loading");
   const [items, setItems] = useState<Item[]>([]);
   const [attemptId, setAttemptId] = useState("");
+  const [total, setTotal] = useState(0);
   const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [result, setResult] = useState<{ passed: boolean; score: number; total: number } | null>(null);
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false); // inputs disabled while grading/animating
 
-  // ── fight feel state (no engine meaning) ──────────────────────────────
+  // ── combat state, all driven by the server's reply ───────────────────────
   const [pose, setPose] = useState<BossPose>("idle");
-  const [hp, setHp] = useState(1);           // fraction of HP remaining, 1 = full
-  const [comboTag, setComboTag] = useState(""); // little "HIT!" / "x3" flourish text
+  const [hpMax, setHpMax] = useState(0);       // hits needed to kill (server `hp`)
+  const [hpRem, setHpRem] = useState(0);       // hits left in the boss (server `hpRemaining`)
+  const [correctStreak, setCorrectStreak] = useState(0);
+  const [wrongStreak, setWrongStreak] = useState(0);
+  const [flourish, setFlourish] = useState<{ text: string; kind: "hit" | "cannon" | "miss" } | null>(null);
+  const [shake, setShake] = useState(false);   // screen kick on a cannon
+  const [warn, setWarn] = useState(false);     // "watch out!" after 2 misses
+  const [receipt, setReceipt] = useState<Receipt>(null);
+  const [correctCount, setCorrectCount] = useState(0);
+
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reduced = useRef(false);
-
-  // HP bar is sized to the PASS THRESHOLD, so the boss dying == the child passing.
-  const total = items.length;
-  const threshold = Math.max(1, Math.ceil(total * 0.9));
-  const hpSegments = Math.max(0, Math.round(hp * threshold));
 
   useEffect(() => {
     reduced.current = !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -65,16 +93,22 @@ export function BossFight({
     return t;
   };
 
+  const hpPct = hpMax > 0 ? Math.max(0, Math.min(1, hpRem / hpMax)) * 100 : 100;
+
   async function start() {
     clearTimers();
     setPhase("loading");
     setErr("");
     setIdx(0);
-    setAnswers([]);
-    setResult(null);
-    setHp(1);
-    setComboTag("");
-    setPose("roar"); // SUMMON beat — the boss appears and roars while it "chooses"
+    setBusy(false);
+    setCorrectStreak(0);
+    setWrongStreak(0);
+    setFlourish(null);
+    setShake(false);
+    setWarn(false);
+    setReceipt(null);
+    setCorrectCount(0);
+    setPose("roar"); // SUMMON beat — the boss appears and roars
     try {
       const r = await fetch("/api/kids/boss/start", {
         method: "POST",
@@ -82,6 +116,11 @@ export function BossFight({
         body: JSON.stringify({ skillId }),
       });
       const d = await r.json();
+      if (d.locked) {
+        setErr(d.error || "Do the lesson first — then face the boss!");
+        setPhase("gate");
+        return;
+      }
       if (!d.ok) {
         setErr(d.error || "The boss isn't ready.");
         setPhase("error");
@@ -89,7 +128,13 @@ export function BossFight({
       }
       setItems(d.items);
       setAttemptId(d.attemptId);
-      setPhase("quiz");
+      setTotal(d.total);
+      // Estimate max HP so the bar is full from the first beat; the server's
+      // exact `hp` reconciles it on the first answer (they match).
+      const estHp = Math.max(1, Math.ceil(d.total * 0.8));
+      setHpMax(estHp);
+      setHpRem(estHp);
+      setPhase("fight");
       sfx.click();
       haptic("tap");
       after(700, () => setPose("idle")); // settle after the roar
@@ -104,140 +149,133 @@ export function BossFight({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skillId]);
 
-  function choose(optIdx: number) {
-    // UNCHANGED answer collection — we only add a wind-up flourish.
+  async function choose(choice: number) {
+    if (busy || phase !== "fight") return;
+    setBusy(true);
+    setFlourish(null);
     sfx.click();
-    setPose("brace"); // strike wind-up: the child is committing a hit (no correctness implied)
-    after(240, () => setPose("idle"));
-    const next = [...answers];
-    next[idx] = optIdx;
-    setAnswers(next);
-    if (idx + 1 < items.length) setIdx(idx + 1);
-    else submit(next);
-  }
+    haptic("tap");
 
-  async function submit(finalAnswers: number[]) {
-    setPhase("marking");
-    setPose("idle");
+    let d: AnswerResp;
     try {
-      const r = await fetch("/api/kids/boss/submit", {
+      const r = await fetch("/api/kids/boss/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attemptId, answers: finalAnswers }),
+        body: JSON.stringify({ attemptId, index: idx, choice }),
       });
-      const d = await r.json();
+      d = await r.json();
       if (!d.ok) {
-        setErr(d.error || "Couldn't mark it — try again.");
+        setErr(d.error || "Couldn't land that — try again.");
         setPhase("error");
         return;
       }
-      setResult({ passed: d.passed, score: d.score, total: d.total });
-
-      // Prefer the server's per-item truth; fall back to `wrong[]` until that
-      // one line lands. Either way the client learns correctness ONLY now (post-submit).
-      const marks: boolean[] =
-        Array.isArray(d.perItemCorrect) && d.perItemCorrect.length === finalAnswers.length
-          ? d.perItemCorrect.map(Boolean)
-          : finalAnswers.map((_, i) => !((d.wrong ?? []) as number[]).includes(i));
-
-      runReplay(marks, !!d.passed);
     } catch {
-      setErr("Couldn't mark it — try again.");
+      setErr("Lost the boss for a moment — try again.");
       setPhase("error");
-    }
-  }
-
-  /** Play the marked answers back as a combo that drains the boss's HP. */
-  function runReplay(marks: boolean[], passed: boolean) {
-    const th = Math.max(1, Math.ceil(marks.length * 0.9));
-
-    // Reduced motion: no combo animation, no shake — snap to the final HP + result.
-    if (reduced.current) {
-      const hits = Math.min(marks.filter(Boolean).length, th);
-      setHp(Math.max(0, (th - hits) / th));
-      finishReplay(passed);
       return;
     }
 
-    setPhase("replay");
-    setHp(1);
-    const STEP = 470;
-    let hits = 0;
-    let combo = 0;
+    // Source of truth: reconcile every meter from the server.
+    setHpMax(d.hp);
+    setHpRem(d.hpRemaining);
+    setCorrectStreak(d.correctStreak);
+    setWrongStreak(d.wrongStreak);
+    setCorrectCount(d.correctCount);
+    if (d.receipt) setReceipt(d.receipt);
 
-    marks.forEach((correct, i) => {
-      after(i * STEP, () => {
-        if (correct) {
-          hits += 1;
-          combo += 1;
-          if (hits <= th) {
-            setHp(Math.max(0, (th - hits) / th));
-            setPose("hit");
-            sfx.tick(Math.min(combo, 12)); // rising-pitch tick, reused from juice.ts
-            haptic("tap");
-            setComboTag(combo >= 3 ? `HIT! x${combo}` : "HIT!");
-          } else {
-            // extra correct beyond the threshold — a bonus critical flourish (HP already 0)
-            setPose("hit");
-            sfx.tick(12);
-            setComboTag("CRIT!");
-          }
-        } else {
-          combo = 0;
-          setPose("parry"); // whiff — the boss blocks, unharmed
-          sfx.error();       // gentle "not that one", never harsh
-          setComboTag("miss");
+    const snap = reduced.current;
+
+    if (d.correct) {
+      setWarn(false);
+      setPose("hit");
+      if (d.cannon) {
+        // 3-in-a-row COMBO — the spectacle beat.
+        sfx.chest();
+        haptic("win");
+        setFlourish({ text: "CANNON! 💥", kind: "cannon" });
+        if (!snap) {
+          setShake(true);
+          after(360, () => setShake(false));
         }
-        after(STEP * 0.5, () => {
-          setPose("idle");
-          setComboTag("");
+      } else {
+        sfx.tick(Math.min(d.correctStreak, 12));
+        haptic("tap");
+        setFlourish({
+          text: d.correctStreak >= 2 ? `HIT!  x${d.correctStreak}` : "HIT!",
+          kind: "hit",
         });
-      });
-    });
+      }
+    } else {
+      // Miss — the boss blocks, unharmed. Never harsh, never reveals the answer.
+      setPose("parry");
+      sfx.error();
+      setFlourish({ text: "miss", kind: "miss" });
+      setWarn(d.wrongStreak >= 2 && !d.terminal);
+    }
 
-    after(marks.length * STEP + 360, () => finishReplay(passed));
+    const settle = snap ? 260 : d.cannon ? 780 : 620;
+
+    if (d.terminal) {
+      after(snap ? 120 : 640, () => finish(d));
+      return;
+    }
+
+    after(settle, () => {
+      setPose("idle");
+      setFlourish(null);
+      setIdx((i) => i + 1);
+      setBusy(false);
+    });
   }
 
-  function finishReplay(passed: boolean) {
-    setComboTag("");
-    if (passed) {
+  function finish(d: AnswerResp) {
+    setFlourish(null);
+    setWarn(false);
+    if (d.outcome === "won") {
       setPose("defeat");
-      celebrate("boss", world); // reuses the shared confetti canvas + held flash + Lottie burst
+      celebrate("boss", world);
       sfx.bossWin();
       haptic("win");
+      setPhase("won");
     } else {
       setPose("survive");
+      setPhase("escaped");
     }
-    setPhase("result");
   }
 
-  const showStage = phase === "loading" || phase === "quiz" || phase === "marking" || phase === "replay";
+  const showStage = phase === "loading" || phase === "fight";
+  const question = items[idx];
 
   return (
-    <div className="k-boss" data-world={world}>
+    <div className={"k-boss" + (shake ? " k-shake" : "")} data-world={world}>
       <div className="k-bosshead">
         <span className="k-bosstag">👑 Boss Fight</span>
         <button className="k-bossx" onClick={() => { clearTimers(); onClose(false); }} aria-label="Leave">✕</button>
       </div>
       <div className="k-bossskill">{skill}</div>
 
-      {/* BOSS STAGE — sprite + HP bar. Present through the whole fight. */}
+      {/* BOSS STAGE — sprite + HP bar. Present through the whole live fight. */}
       {showStage && (
         <div className="k-bossstage">
           <div className="k-bossarena">
+            {flourish?.kind === "cannon" && !reduced.current && <span className="k-bosscannon" aria-hidden />}
             <BossSprite world={world} pose={pose} size={168} />
-            {comboTag && <span className={"k-bosscombo" + (comboTag === "miss" ? " miss" : "")}>{comboTag}</span>}
+            {flourish && (
+              <span className={"k-bosscombo" + (flourish.kind === "miss" ? " miss" : flourish.kind === "cannon" ? " cannon" : "")}>
+                {flourish.text}
+              </span>
+            )}
           </div>
-          {items.length > 0 && (
+          {hpMax > 0 && (
             <div className="k-bosshpwrap">
               <div className="k-bosshplabel">
                 <span>{BOSS_NAME[world]}</span>
-                <span>{hpSegments} / {threshold} HP</span>
+                <span>{hpRem} / {hpMax} HP</span>
               </div>
-              <div className="k-bosshp" role="img" aria-label={`Boss health ${hpSegments} of ${threshold}`}>
-                <div className="k-bosshpf" style={{ width: hp * 100 + "%" }} />
-                {Array.from({ length: threshold - 1 }).map((_, i) => (
-                  <span key={i} className="k-bosshptick" style={{ left: ((i + 1) / threshold) * 100 + "%" }} />
+              <div className="k-bosshp" role="img" aria-label={`Boss health ${hpRem} of ${hpMax}`}>
+                <div className="k-bosshpf" style={{ width: hpPct + "%" }} />
+                {Array.from({ length: Math.max(0, hpMax - 1) }).map((_, i) => (
+                  <span key={i} className="k-bosshptick" style={{ left: ((i + 1) / hpMax) * 100 + "%" }} />
                 ))}
               </div>
             </div>
@@ -247,7 +285,17 @@ export function BossFight({
 
       {phase === "loading" && (
         <div className="k-bosscenter">
+          <div className="k-spin" />
           <div className="k-bosssub">The boss is choosing its challenges…</div>
+        </div>
+      )}
+
+      {phase === "gate" && (
+        <div className="k-bosscenter">
+          <div className="k-bossbig">🔒</div>
+          <div className="k-bosswin">Not yet!</div>
+          <div className="k-bosssub">{err}</div>
+          <button className="k-bossgo" onClick={() => { clearTimers(); onClose(false); }}>Back to the map</button>
         </div>
       )}
 
@@ -260,18 +308,20 @@ export function BossFight({
         </div>
       )}
 
-      {phase === "quiz" && items[idx] && (
+      {phase === "fight" && question && (
         <>
+          <div className="k-bossmeta">
+            <span className="k-bosstag" style={{ opacity: 0.7 }}>Question {idx + 1} of {total}</span>
+            {correctStreak >= 2 && <span className="k-bossstreak">🔥 x{correctStreak}</span>}
+          </div>
           <div className="k-bossprog">
-            <div className="k-bossprogf" style={{ width: (idx / items.length) * 100 + "%" }} />
+            <div className="k-bossprogf" style={{ width: (idx / Math.max(1, total)) * 100 + "%" }} />
           </div>
-          <div className="k-bosstag" style={{ opacity: 0.6, marginBottom: 6 }}>
-            Question {idx + 1} of {items.length}
-          </div>
-          <div className="k-bossq">{items[idx].q}</div>
+          {warn && <div className="k-bosswarn">⚠️ Watch out — it&rsquo;s about to get away!</div>}
+          <div className="k-bossq">{question.q}</div>
           <div className="k-opts">
-            {items[idx].options.map((o, i) => (
-              <button key={i} className="k-opt" onClick={() => choose(i)}>
+            {question.options.map((o, i) => (
+              <button key={i} className="k-opt" disabled={busy} onClick={() => choose(i)}>
                 {o}
               </button>
             ))}
@@ -279,41 +329,32 @@ export function BossFight({
         </>
       )}
 
-      {phase === "marking" && (
+      {phase === "won" && (
         <div className="k-bosscenter">
-          <div className="k-bosssub">Landing your hits…</div>
+          <div className="k-bossbig">🏆</div>
+          <div className="k-bosswin">BOSS BEATEN!</div>
+          <div className="k-bosssub">
+            You landed {correctCount} clean hits and <b>mastered</b> this skill. New quests just unlocked on your map!
+          </div>
+          {receipt && (receipt.xp_awarded || receipt.coins_awarded) ? (
+            <div className="k-bossloot">
+              {receipt.xp_awarded ? <span>+{receipt.xp_awarded} XP</span> : null}
+              {receipt.coins_awarded ? <span>+{receipt.coins_awarded} 🪙</span> : null}
+            </div>
+          ) : null}
+          <button className="k-bossgo" onClick={() => { clearTimers(); onClose(true); }}>Onwards! →</button>
         </div>
       )}
 
-      {phase === "replay" && (
+      {phase === "escaped" && (
         <div className="k-bosscenter">
-          <div className="k-bosssub">The strikes land…</div>
-        </div>
-      )}
-
-      {phase === "result" && result && (
-        <div className="k-bosscenter">
-          {result.passed ? (
-            <>
-              <div className="k-bossbig">🏆</div>
-              <div className="k-bosswin">BOSS BEATEN!</div>
-              <div className="k-bosssub">
-                {result.score} out of {result.total} — you&rsquo;ve <b>mastered</b> this skill. New quests just unlocked on your map!
-              </div>
-              <button className="k-bossgo" onClick={() => { clearTimers(); onClose(true); }}>Onwards! →</button>
-            </>
-          ) : (
-            <>
-              <div className="k-bossbig">💪</div>
-              <div className="k-bosswin" style={{ color: "#fff" }}>It got you this time</div>
-              <div className="k-bosssub">
-                You landed {result.score} of {result.total}. So close! Do the lesson again, ask your coach, and come back — the boss
-                waits, and there&rsquo;s no limit on tries.
-              </div>
-              <button className="k-bossgo" onClick={start}>Try again</button>
-              <button className="k-bossghost" onClick={() => { clearTimers(); onClose(false); }}>Back to the map</button>
-            </>
-          )}
+          <div className="k-bossbig">💨</div>
+          <div className="k-bosswin" style={{ color: "#fff" }}>The boss got away!</div>
+          <div className="k-bosssub">
+            It slipped away this time — but you lose <b>nothing</b>. Practise a little more, then challenge it again. You&rsquo;ve got this!
+          </div>
+          <button className="k-bossgo" onClick={start}>Try again</button>
+          <button className="k-bossghost" onClick={() => { clearTimers(); onClose(false); }}>Back to the map</button>
         </div>
       )}
     </div>
