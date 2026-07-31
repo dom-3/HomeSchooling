@@ -78,6 +78,20 @@ export interface BondQuest {
   is_teach: boolean;
 }
 
+export interface RealWorldQuest {
+  id: string;
+  quest_key: string;
+  domain: string; // fine_motor | gross_motor | making | thinking
+  label: string;
+  icon: string | null;
+  blurb: string | null;
+  xp: number;
+  coins: number;
+  est_minutes: number;
+  scope: string; // shared | rupert | albie
+  sort: number;
+}
+
 export interface HabitItem {
   habit_id: string;
   habit_key: string;
@@ -108,6 +122,12 @@ export interface KidHome {
   inspiration: { quote: string; author: string; meaning: string; theme: string | null } | null;
   /** skill_ids the child has already practised (result tried/got_it) — the Boss unlocks per skill only after its lesson is done. */
   lessonsDone: string[];
+  /** Offline / hands-on quests (fine motor, making, movement, thinking) — parent-verified, earn XP+coins. */
+  realWorld: {
+    quests: RealWorldQuest[];
+    pendingQuestIds: string[];
+    verifiedTodayQuestIds: string[];
+  };
 }
 
 /** For the boy-picker on the PIN gate. */
@@ -123,7 +143,7 @@ export async function getLearnersForPicker(): Promise<KidLearner[]> {
 /** Everything one boy's home screen needs, in one round of reads. */
 export async function getKidHome(learnerId: string): Promise<KidHome> {
   const a = getAdminClient();
-  const [learner, pulse, wallet, plan, shop, team, levels, cosmetics, owned, bonds, habits, insp, lessons] = await Promise.all([
+  const [learner, pulse, wallet, plan, shop, team, levels, cosmetics, owned, bonds, habits, insp, lessons, rwQuests, rwCompletions] = await Promise.all([
     a.from("learners").select("id, name, interests, photo_url").eq("id", learnerId).maybeSingle(),
     a.from("v_motivation_pulse").select("*").eq("learner_id", learnerId).maybeSingle(),
     a.from("v_coin_wallet").select("balance, net_today").eq("learner_id", learnerId).maybeSingle(),
@@ -137,7 +157,12 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     a.from("v_today_habits").select("*").eq("learner_id", learnerId).order("sort", { ascending: true }),
     a.from("v_daily_inspiration").select("*").maybeSingle(),
     a.from("activity_events").select("skill_id").eq("learner_id", learnerId).in("result", ["tried", "got_it"]),
+    a.from("real_world_quests").select("*").eq("active", true).order("sort", { ascending: true }),
+    a.from("real_world_completions").select("quest_id, status, decided_at").eq("learner_id", learnerId).in("status", ["pending", "verified"]),
   ]);
+  const dayStart = new Date();
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const rwComps = (rwCompletions.data ?? []) as { quest_id: string | null; status: string; decided_at: string | null }[];
   return {
     learner: (learner.data ?? null) as KidLearner | null,
     pulse: (pulse.data ?? null) as KidPulse | null,
@@ -154,5 +179,13 @@ export async function getKidHome(learnerId: string): Promise<KidHome> {
     lessonsDone: Array.from(
       new Set(((lessons.data ?? []) as { skill_id: string | null }[]).map((r) => r.skill_id).filter(Boolean) as string[])
     ),
+    realWorld: {
+      quests: (rwQuests.data ?? []) as RealWorldQuest[],
+      pendingQuestIds: rwComps.filter((c) => c.status === "pending").map((c) => c.quest_id).filter(Boolean) as string[],
+      verifiedTodayQuestIds: rwComps
+        .filter((c) => c.status === "verified" && c.decided_at != null && new Date(c.decided_at) >= dayStart)
+        .map((c) => c.quest_id)
+        .filter(Boolean) as string[],
+    },
   };
 }

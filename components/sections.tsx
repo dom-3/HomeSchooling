@@ -216,6 +216,36 @@ function RewardActions({ id }: { id: string }) {
   );
 }
 
+/** Approve / Decline buttons for a pending real-world (off-screen) quest. */
+function RealWorldActions({ id }: { id: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState<null | "approve" | "decline">(null);
+  async function act(kind: "approve" | "decline") {
+    if (busy) return;
+    setBusy(kind);
+    try {
+      await fetch(`/api/realworld/${kind}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completionId: id, reason: kind === "decline" ? "Not quite yet" : undefined }),
+      });
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
+  return (
+    <div className="flex gap-2">
+      <Button variant="secondary" size="sm" disabled={busy !== null} onClick={() => act("decline")}>
+        {busy === "decline" ? "…" : "Decline"}
+      </Button>
+      <Button variant="primary" size="sm" disabled={busy !== null} onClick={() => act("approve")}>
+        {busy === "approve" ? "…" : "Approve"}
+      </Button>
+    </div>
+  );
+}
+
 /** Pay button for a boy's weekly pocket-money payslip (admin, live). */
 function PaydayActions({ learnerId, paid }: { learnerId: string; paid: boolean }) {
   const router = useRouter();
@@ -248,6 +278,7 @@ export function MotivationSection({ data }: { data: DashboardData }) {
     const k = keyById.get(r.learner_id);
     return visible.some((v) => v.id === r.learner_id) && k;
   });
+  const realWorld = data.realWorldPending.filter((r) => visible.some((v) => v.id === r.learner_id));
   const payday = data.payday.filter((p) => visible.some((v) => v.id === p.learner_id));
   const tutor = data.tutor.filter((m) => visible.some((v) => v.id === m.learner_id));
 
@@ -310,6 +341,36 @@ export function MotivationSection({ data }: { data: DashboardData }) {
           <p className="mt-3 border-t border-hairline pt-3 text-[12px] text-ink-3">
             The boys&rsquo; coins are <i>reserved</i> when they request. Approve charges them and
             marks it fulfilled; Decline releases the coins straight back — a &ldquo;no&rdquo; costs them nothing.
+          </p>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader icon="🌳" title="Real-World Quests to check" />
+        <CardBody>
+          {realWorld.length === 0 ? (
+            <p className="py-2 text-[12.5px] text-ink-3">No real-world quests awaiting a check.</p>
+          ) : (
+            <div className="flex flex-col">
+              {realWorld.map((r, i, arr) => (
+                <ListRow
+                  key={r.completion_id}
+                  last={i === arr.length - 1}
+                  leading={<StatusPill variant={keyById.get(r.learner_id) ?? "rupert"}>{r.learner}</StatusPill>}
+                  title={`${r.icon ?? "🌳"} ${r.title}`}
+                  subtitle={`${r.child_note ? `“${r.child_note}” · ` : ""}${r.minutes ?? 0} min · ${
+                    r.xp_awarded ?? 0
+                  } XP · ${r.coins_awarded ?? 0} coins${
+                    r.submitted_at ? ` · ${new Date(r.submitted_at).toLocaleDateString("en-GB")}` : ""
+                  }`}
+                  trailing={<RealWorldActions id={r.completion_id} />}
+                />
+              ))}
+            </div>
+          )}
+          <p className="mt-3 border-t border-hairline pt-3 text-[12px] text-ink-3">
+            Off-screen, hands-on quests the boys did for real. Approve to mint the XP + coins;
+            Decline (with a gentle reason) if it needs another go — nothing is charged either way.
           </p>
         </CardBody>
       </Card>

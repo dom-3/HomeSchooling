@@ -257,6 +257,21 @@ export function demoDashboard(): DashboardData {
         balance_now: 2600,
       },
     ],
+    realWorldPending: [
+      {
+        completion_id: "rw1",
+        learner_id: ALBIE_ID,
+        learner: "Albie",
+        title: "Build something from junk-modelling",
+        child_note: "I made a rocket from a cereal box!",
+        minutes: 25,
+        xp_awarded: 40,
+        coins_awarded: 20,
+        submitted_at: today(),
+        domain: "making",
+        icon: "🛠️",
+      },
+    ],
     payday: [
       { learner_id: RUPERT_ID, learner: "Rupert", week_start: today(), base_gbp: 5, per_output_gbp: 1, weekly_cap_gbp: 25, weekly_target: 10, outputs: 12, amount_gbp: 17, status: "pending", paid_at: null },
       { learner_id: ALBIE_ID, learner: "Albie", week_start: today(), base_gbp: 5, per_output_gbp: 1, weekly_cap_gbp: 25, weekly_target: 10, outputs: 6, amount_gbp: 11, status: "pending", paid_at: null },

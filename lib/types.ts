@@ -119,6 +119,21 @@ export interface RewardRow {
   balance_now: number | null;
 }
 
+/** v_real_world_pending — offline "get off the screen" quests awaiting a grown-up's check. */
+export interface RealWorldPendingRow {
+  completion_id: string;
+  learner_id: string;
+  learner: string;
+  title: string;
+  child_note: string | null;
+  minutes: number | null;
+  xp_awarded: number | null;
+  coins_awarded: number | null;
+  submitted_at: string | null;
+  domain: string | null;
+  icon: string | null;
+}
+
 /** v_tutor_recent — every AI-coach exchange, for parent audit. */
 export interface TutorRow {
   id: string;
@@ -157,6 +172,7 @@ export interface DashboardData {
   sessions: SessionRow[];
   motivation: MotivationRow[];
   rewards: RewardRow[];
+  realWorldPending: RealWorldPendingRow[];
   payday: PaydayRow[];
   tutor: TutorRow[];
   /** stable learner_id → identity map, derived from whatever rows resolved. */

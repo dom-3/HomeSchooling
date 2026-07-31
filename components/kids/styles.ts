@@ -373,4 +373,24 @@ body.k-celebrate::after{content:"";position:fixed;inset:0;z-index:54;pointer-eve
   .k-hb-waves,.k-hb-boat,.k-hb-flame,.k-hb-flower,.k-hb-pet,.k-hb-tail,.k-hb-pop{animation:none;opacity:1;transform:none}
 }
 
+/* ---- Real-World tab: hands-on, off-screen quests (parent-verified) ---- */
+.k-rwbanner{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#ecfdf5,#d1fae5);
+  border:2px solid #a7f3d0;border-radius:16px;padding:13px 15px;margin-top:2px;
+  font-size:13.5px;font-weight:700;color:#166534;line-height:1.3}
+.k-rwbannic{flex:none;font-size:26px;line-height:1}
+.k-rwgrid{display:flex;flex-direction:column;gap:9px}
+.k-rwcard{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid #eee;border-radius:15px;padding:11px 13px}
+.k-rwic{width:46px;height:46px;flex:none;border-radius:13px;background:#ecfdf5;display:flex;align-items:center;justify-content:center;font-size:24px}
+.k-rwmid{flex:1;min-width:0}
+.k-rwt{font-size:14px;font-weight:800;line-height:1.15}
+.k-rwsub{font-size:11px;font-weight:700;opacity:.6;margin-top:2px;line-height:1.25}
+.k-rwrw{font-size:11.5px;font-weight:800;color:#16a34a;margin-top:3px}
+.k-rwbtn{flex:none;border:none;border-radius:11px;font-weight:800;font-size:12.5px;padding:9px 12px;cursor:pointer;
+  white-space:nowrap;max-width:118px;line-height:1.15;text-align:center}
+.k-rwbtn.go{background:#16a34a;color:#fff;box-shadow:0 3px 0 #15803d}
+.k-rwbtn.go:active{transform:translateY(2px);box-shadow:0 1px 0 #15803d}
+.k-rwbtn.go[disabled]{background:#9fdcb5;box-shadow:0 3px 0 #7ec99a;cursor:default}
+.k-rwbtn.pend{background:#f59e0b;color:#fff;box-shadow:0 3px 0 #b45309;cursor:default}
+.k-rwbtn.done{background:#22c55e;color:#fff;box-shadow:0 3px 0 #15803d;cursor:default}
+
 `;

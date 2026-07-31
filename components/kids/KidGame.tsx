@@ -61,6 +61,14 @@ const TIERS: { key: string; label: string }[] = [
   { key: "experience", label: "🏆 Big adventures" },
 ];
 
+/** Real-World quest domains → friendly headings, in display order. */
+const RW_GROUPS: { key: string; label: string }[] = [
+  { key: "fine_motor", label: "✍️ Hands & writing" },
+  { key: "making", label: "🛠️ Make & grow" },
+  { key: "gross_motor", label: "🏃 Move your body" },
+  { key: "thinking", label: "🧠 Think it through" },
+];
+
 
 export function KidGame({ home }: { home: KidHome }) {
   const router = useRouter();
@@ -74,10 +82,11 @@ export function KidGame({ home }: { home: KidHome }) {
     const weekend = d.getDay() === 0 || d.getDay() === 6;
     setDayLabel(weekend ? `${wd} · your choice 🌟` : wd);
   }, []);
-  const [tab, setTab] = useState<"quests" | "rewards" | "base" | "team">("quests");
+  const [tab, setTab] = useState<"quests" | "realworld" | "rewards" | "base" | "team">("quests");
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Set<string>>(new Set());
+  const [rwPending, setRwPending] = useState<Set<string>>(new Set());
   const [chestUsed, setChestUsed] = useState(false);
   const [sel, setSel] = useState<number | null>(null);
   const [boss, setBoss] = useState<{ skillId: string; skill: string } | null>(null);
@@ -280,6 +289,24 @@ export function KidGame({ home }: { home: KidHome }) {
     setBusy(false);
   }
 
+  async function doRealWorld(questId: string) {
+    if (busy || rwPending.has(questId)) return;
+    setBusy(true);
+    const r = await post("/api/kids/realworld", { questId });
+    if (r?.ok) {
+      // Optimistic: flip to "waiting" straight away; the parent verifies later.
+      setRwPending((s) => new Set(s).add(questId));
+      sfx.coin();
+      haptic("tap");
+      flash("Nice! Ask a grown-up to check it ✅");
+      router.refresh();
+    } else {
+      sfx.error();
+      flash("Try again", false);
+    }
+    setBusy(false);
+  }
+
   async function buy(itemKey: string) {
     if (busy) return;
     setBusy(true);
@@ -419,6 +446,7 @@ export function KidGame({ home }: { home: KidHome }) {
       {/* TABS */}
       <div className="k-tabs">
         <button className={"k-tab" + (tab === "quests" ? " on" : "")} onClick={() => setTab("quests")}>🎯 Quests</button>
+        <button className={"k-tab" + (tab === "realworld" ? " on" : "")} onClick={() => setTab("realworld")}>🌳 Real World</button>
         <button className={"k-tab" + (tab === "rewards" ? " on" : "")} onClick={() => setTab("rewards")}>🎁 Shop</button>
         <button className={"k-tab" + (tab === "base" ? " on" : "")} onClick={() => setTab("base")}>{boyKey === "rupert" ? "🏠 Garage" : "🏝️ Island"}</button>
         <button className={"k-tab" + (tab === "team" ? " on" : "")} onClick={() => setTab("team")}>🤝 Team</button>
@@ -468,6 +496,61 @@ export function KidGame({ home }: { home: KidHome }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* REAL WORLD — offline, hands-on quests, parent-verified */}
+      {tab === "realworld" && (
+        <div>
+          <div className="k-rwbanner">
+            <span className="k-rwbannic">🌳</span>
+            Real things you make and do. Earn coins and XP for getting OFF the screen!
+          </div>
+          {RW_GROUPS.map((g) => {
+            const items = home.realWorld.quests.filter(
+              (q) => (q.scope === "shared" || q.scope === boyKey) && q.domain === g.key
+            );
+            if (items.length === 0) return null;
+            return (
+              <div key={g.key}>
+                <div className="k-th">{g.label}</div>
+                <div className="k-rwgrid">
+                  {items.map((q) => {
+                    const pending =
+                      home.realWorld.pendingQuestIds.includes(q.id) || rwPending.has(q.id);
+                    const doneToday = home.realWorld.verifiedTodayQuestIds.includes(q.id);
+                    return (
+                      <div className="k-rwcard" key={q.id}>
+                        <div className="k-rwic">{q.icon ?? "🌳"}</div>
+                        <div className="k-rwmid">
+                          <div className="k-rwt">{q.label}</div>
+                          {q.blurb && <div className="k-rwsub">{q.blurb}</div>}
+                          <div className="k-rwrw">{q.xp} XP · {q.coins} 🪙</div>
+                        </div>
+                        {pending ? (
+                          <button className="k-rwbtn pend" disabled>Waiting for a grown-up ⏳</button>
+                        ) : doneToday ? (
+                          <button className="k-rwbtn done" disabled>Done today ✓</button>
+                        ) : (
+                          <button
+                            className="k-rwbtn go"
+                            disabled={busy}
+                            onClick={() => doRealWorld(q.id)}
+                          >
+                            I did this!
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {home.realWorld.quests.filter((q) => q.scope === "shared" || q.scope === boyKey).length === 0 && (
+            <div className="k-empty">No real-world quests right now — check back soon! 🌱</div>
+          )}
+          <p className="k-hint">A grown-up checks these before your coins and XP land. 🌟</p>
         </div>
       )}
 
